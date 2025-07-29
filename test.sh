@@ -16,11 +16,11 @@ file1="./sout.log"
 file2="./expected_stdout.log"
 
 if cmp -s "$file1" "$file2"; then
-    printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2"
-    echo "Test OK"
-    exit 0
+  printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2"
+  echo -e "\e[32mTest OK\e[0m"
+  exit 0
 else
-    printf 'The file "%s" is different from "%s"\n' "$file1" "$file2"
-    echo "Test FAIL"
-    exit 1
+  printf 'The file "%s" is different from "%s"\n' "$file1" "$file2"
+  echo -e "\e[31mTest FAIL\e[0m"
+  exit 1
 fi
