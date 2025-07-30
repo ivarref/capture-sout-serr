@@ -44,7 +44,11 @@ public class ReplayConsumePrintStream extends PrintStream {
         consumer = lineConsumer;
         for (String line : buffer) {
             debug("UNBUFFERING: " + line);
-            consumer.accept(line);
+            try {
+                consumer.accept(line);
+            } catch (Throwable t) {
+                debug("UNBUFFERING FAILED: " + t.getMessage());
+            }
         }
         buffer.clear();
     }
@@ -64,7 +68,7 @@ public class ReplayConsumePrintStream extends PrintStream {
             try {
                 consumer.accept(line);
             } catch (Throwable t) {
-
+                debug("DIRECT SEND FAILED: " + t.getMessage());
             }
         }
     }
