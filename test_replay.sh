@@ -6,11 +6,11 @@ rm -rf ./target || true
 
 lein javac
 
-file1="./sout.log"
+file1="./sout_replay.log"
 file2="./expected_stdout.log"
 rm -f "$file1" || true
 
-java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ConsumePrintStreamTest
+java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ReplayConsumePrintStreamTest
 
 if cmp -s "$file1" "$file2"; then
   printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2"
