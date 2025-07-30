@@ -2,9 +2,12 @@
 
 set -euo pipefail
 
-rm -rf ./target || true
-
-lein javac
+if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
+  :
+else
+  rm -rf ./target || true
+  lein javac
+fi
 
 file1="./sout.log"
 file2="./expected_stdout.log"
