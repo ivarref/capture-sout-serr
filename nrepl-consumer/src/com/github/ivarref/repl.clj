@@ -1,6 +1,5 @@
 (ns com.github.ivarref.repl
-  (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)
-           (java.util.function Consumer)))
+  (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)))
 
 (comment)
 
