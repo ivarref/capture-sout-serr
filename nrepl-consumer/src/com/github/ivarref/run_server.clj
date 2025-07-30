@@ -1,5 +1,6 @@
 (ns com.github.ivarref.run-server
-  (:require [nrepl.server :as nrepl-server]
+  (:require [nrepl.core :as nrepl]
+            [nrepl.server :as nrepl-server]
             [nrepl.core :as nrepl-client])
   (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)
            (java.io OutputStreamWriter)))
@@ -29,7 +30,11 @@
     #_(alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream)))
     #_(println "not shown on -X:run-server")
     #_(nrepl-server/start-server :port 7888)
-    (nrepl-client/connect :host "127.0.0.1" :port 7888)
+    (with-open [conn (nrepl/connect :host "127.0.0.1" :port 7888)]
+      (-> (nrepl/client conn 1000)    ; message receive timeout required
+          (nrepl/message {:op "eval" :code "(+ 2 3)"})
+          nrepl/response-values
+          (println)))
     @(promise)
     (catch Exception e
       (binding [*out* *err*]
