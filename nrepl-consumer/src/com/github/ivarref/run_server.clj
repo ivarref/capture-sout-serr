@@ -5,6 +5,8 @@
   (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)
            (java.io OutputStreamWriter)))
 
+(set! *warn-on-reflection* true)
+
 (defonce debug-write-lock (Object.))
 
 (defonce original-stdout System/out)
@@ -18,6 +20,16 @@
     (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream)))
     (println "not shown on -X:run-server, but will be buffered")
     (nrepl-server/start-server :port 7888)
+    (future
+      (loop [i 1]
+        (println (str "println from background thread. Count: " i))
+        (Thread/sleep 5000)
+        (recur (inc i))))
+    (future
+      (loop [i 1]
+        (.println System/out (str "System/out println from background thread. Count: " i))
+        (Thread/sleep 5000)
+        (recur (inc i))))
     @(promise)
     (catch Exception e
       (binding [*out* *err*]
@@ -37,6 +49,11 @@
   (debug2 "hook-sout-running")
   (debug2 (str "*out* is: " (pr-str *out*)))
   :hook-sout-ok)
+
+
+(defn err-println [& msgs]
+  (binding [*out* *err*]
+    (apply println msgs)))
 
 #_(defn run-client [_]
     (try

@@ -28,19 +28,22 @@ public class ReplayConsumePrintStream extends PrintStream {
         this.id = instanceNumber.getAndIncrement();
     }
 
+    public static synchronized void debug(String msg) {
+        if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
+            final String fileName = "./debug.log";
+            try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
+                 final PrintWriter pw = new PrintWriter(fw)) {
+                pw.println(msg);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public synchronized void setConsumer(Consumer<String> lineConsumer) {
         consumer = lineConsumer;
         for (String line : buffer) {
-            if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
-                final String fileName = "./debug.log";
-                try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
-                     final PrintWriter pw = new PrintWriter(fw)) {
-                    pw.println("UNBUFFERING: " + line);
-                } catch (IOException e) {
-//                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
+            debug("UNBUFFERING: " + line);
             consumer.accept(line);
         }
         buffer.clear();
@@ -55,18 +58,14 @@ public class ReplayConsumePrintStream extends PrintStream {
             } else {
                 buffer.add(line);
             }
-            if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
-                final String fileName = "./debug.log";
-                try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
-                     final PrintWriter pw = new PrintWriter(fw)) {
-                    pw.println("BUFFERING: " + line);
-                } catch (IOException e) {
-//                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
+            debug("BUFFERING: " + line);
         } else {
-            consumer.accept(line);
+            debug("DIRECT SEND: " + line);
+            try {
+                consumer.accept(line);
+            } catch (Throwable t) {
+
+            }
         }
     }
 

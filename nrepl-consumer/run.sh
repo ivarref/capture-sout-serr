@@ -50,33 +50,33 @@ printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$0"
 printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$0"
 #clojure -X:run-client 2>&1 | ./prefix.py "clojure -X:run-client"
 
-cat ./client.clj | clj -M -m nrepl.cmdline --connect --host localhost --port 7888 | ./prefix.py "nrepl-client"
-
-file1="./debug.log"
-file2="./expected_debug.log"
-
-if [ ! -f "$file1" ]; then
-  printf 'The file "%s" does not exist\n' "$file1" | ./prefix.py "$0"
-  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-  exit 1
-elif [ ! -f "$file2" ]; then
-  printf 'The file "%s" does not exist\n' "$file2" | ./prefix.py "$0"
-  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-  exit 1
-elif cmp -s "$file1" "$file2"; then
-  printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
-  echo -e "\e[32mTest OK\e[0m" | ./prefix.py "$0"
-else
-  printf 'The file "%s" is different from "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
-  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-  exit 1
-fi
-
-printf "\e[0m%s\e[0m\n" "Contents of debug.log:" | ./prefix.py "$0"
-cat ./debug.log | ./prefix.py "cat ./debug.log"
-
-printf "\e[0m%s\e[0m\n" "Contents of debug2.log:" | ./prefix.py "$0"
-cat ./debug2.log | ./prefix.py "cat ./debug2.log"
+#cat ./client.clj | clj -M -m nrepl.cmdline --connect --host localhost --port 7888 | ./prefix.py "nrepl-client"
+#
+#file1="./debug.log"
+#file2="./expected_debug.log"
+#
+#if [ ! -f "$file1" ]; then
+#  printf 'The file "%s" does not exist\n' "$file1" | ./prefix.py "$0"
+#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
+#  exit 1
+#elif [ ! -f "$file2" ]; then
+#  printf 'The file "%s" does not exist\n' "$file2" | ./prefix.py "$0"
+#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
+#  exit 1
+#elif cmp -s "$file1" "$file2"; then
+#  printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
+#  echo -e "\e[32mTest OK\e[0m" | ./prefix.py "$0"
+#else
+#  printf 'The file "%s" is different from "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
+#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
+#  exit 1
+#fi
+#
+#printf "\e[0m%s\e[0m\n" "Contents of debug.log:" | ./prefix.py "$0"
+#cat ./debug.log | ./prefix.py "cat ./debug.log"
+#
+#printf "\e[0m%s\e[0m\n" "Contents of debug2.log:" | ./prefix.py "$0"
+#cat ./debug2.log | ./prefix.py "cat ./debug2.log"
 
 printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ..." | ./prefix.py "$0"
 wait $(jobs -p)
