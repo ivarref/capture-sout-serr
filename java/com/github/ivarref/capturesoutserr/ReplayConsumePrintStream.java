@@ -1,7 +1,6 @@
 package com.github.ivarref.capturesoutserr;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +26,16 @@ public class ReplayConsumePrintStream extends PrintStream {
     public synchronized void setConsumer(Consumer<String> lineConsumer) {
         consumer = lineConsumer;
         for (String line : buffer) {
+            if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
+                final String fileName = "./debug.log";
+                try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
+                     final PrintWriter pw = new PrintWriter(fw)) {
+                    pw.println("UNBUFFERING: " + line);
+                } catch (IOException e) {
+//                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            }
             consumer.accept(line);
         }
         buffer.clear();
@@ -40,6 +49,16 @@ public class ReplayConsumePrintStream extends PrintStream {
                 buffer.add(line);
             } else {
                 buffer.add(line);
+            }
+            if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
+                final String fileName = "./debug.log";
+                try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
+                     final PrintWriter pw = new PrintWriter(fw)) {
+                    pw.println("BUFFERING: " + line);
+                } catch (IOException e) {
+//                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
             }
         } else {
             consumer.accept(line);

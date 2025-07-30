@@ -11,10 +11,14 @@
   (.println System/out "Hello from System/out")
   (println "Hello from client.clj")
 
-  @(future (fn []
-             (Thread/sleep 1000)
-             (.println System/out "Hello from background thread on System/out")
-             (println "Hello from background thread on println")))
+  (alter-var-root #'*out* (fn [_] *out*))
+  (let [res @(future (fn []
+                       (Thread/sleep 1000)
+                       (.println System/out "Hello from background thread on System/out")
+                       (println "Hello from background thread on println")
+                       :thread-done))]
+    #_(com.github.ivarref.run-server/debug (str (class res)))
+    [:client-clj-done res])
   #_(alter-var-root #'*out* (fn [_] *out*))
 
   #_(println (str "*out* is " (.getClass *out*)))
