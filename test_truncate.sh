@@ -11,7 +11,7 @@ fi
 
 file1="./sout_truncate.log"
 file2="./expected_truncate.log"
-rm -f "$file1" || true
+rm -f "$file1"
 
 java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ReplayConsumePrintStreamTruncateTest
 
