@@ -11,6 +11,8 @@
   (.println System/out "Hello from System/out")
   (println "Hello from client.clj")
 
+  (com.github.ivarref.run-server/hook-sout)
+
   (alter-var-root #'*out* (fn [_] *out*))
   (let [res @(future (fn []
                        (Thread/sleep 1000)

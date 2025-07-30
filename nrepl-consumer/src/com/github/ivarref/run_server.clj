@@ -29,8 +29,13 @@
   (locking debug-write-lock
     (spit "debug.log" (str msg "\n") :append true)))
 
+(defn debug2 [msg]
+  (locking debug-write-lock
+    (spit "debug2.log" (str msg "\n") :append true)))
+
 (defn hook-sout []
-  (debug (pr-str *out*))
+  (debug2 "hook-sout-running")
+  (debug2 (str "*out* is: " (pr-str *out*)))
   :hook-sout-ok)
 
 #_(defn run-client [_]

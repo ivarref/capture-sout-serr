@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class ReplayConsumePrintStream extends PrintStream {
@@ -11,6 +12,9 @@ public class ReplayConsumePrintStream extends PrintStream {
     public static final int BUFFER_SIZE = 100_000;
     private int last = -1;
 
+    public static final AtomicLong instanceNumber = new AtomicLong(1L);
+
+    private final long id;
     /**
      * stream used for buffering lines
      */
@@ -21,6 +25,7 @@ public class ReplayConsumePrintStream extends PrintStream {
     public ReplayConsumePrintStream() {
         super(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
         this.bufOut = (ByteArrayOutputStream) super.out;
+        this.id = instanceNumber.getAndIncrement();
     }
 
     public synchronized void setConsumer(Consumer<String> lineConsumer) {
@@ -63,6 +68,11 @@ public class ReplayConsumePrintStream extends PrintStream {
         } else {
             consumer.accept(line);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "com.github.ivarref.capturesoutserr.ReplayConsumePrintStream@" + id;
     }
 
     @Override
