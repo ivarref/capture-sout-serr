@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-trap "trap - SIGTERM && echo 'run.sh exiting' && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
+echo "clojure -X:run-server" > ./.max_prefix.txt
+
+trap "trap - SIGTERM && { echo 'run.sh exiting' | ./prefix.py \"run.sh\"; } && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
 
 # https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 SOURCE=${BASH_SOURCE[0]}
@@ -15,18 +17,20 @@ DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 cd "$DIR"
 
-bash -c "cd \"$DIR/..\" && ./test_all.sh"
+bash -c "cd \"$DIR/..\" && ./test.sh" 2>&1 | ./prefix.py "test.sh"
+bash -c "cd \"$DIR/..\" && ./test_replay.sh" 2>&1 | ./prefix.py "test_replay.sh"
+bash -c "cd \"$DIR/..\" && ./test_truncate.sh" 2>&1 | ./prefix.py "test_truncate.sh"
+bash -c "cd \"$DIR/..\" && lein install" 2>&1 | ./prefix.py "lein install"
 
-bash -c "cd \"$DIR/..\" && lein install" 2>&1 | sed -u -e "s/.*/lein install &/"
+printf "\e[32m%s\e[0m\n" "Tests passed and install OK" | ./prefix.py "run.sh"
 
-printf "\e[32m%s\e[0m\n" "Tests passed and install OK"
+clojure -X:run-server 2>&1 | ./prefix.py "clojure -X:run-server" &
 
-clojure -X:run-server 2>&1 | sed -u -e "s/.*/clojure -X:run-server &/" &
+bash -c "./wait_nrepl.sh" 2>&1 | ./prefix.py "wait_nrepl.sh"
 
-bash -c "./wait_nrepl.sh" 2>&1 | sed -u -e "s/.*/wait_nrepl.sh &/"
+#
+#printf "\e[32m%s\e[0m\n" "nREPL server up"
+#
+#clojure -X:run-client 2>&1 | sed -u -e "s/.*/clojure -X:run-client &/"
 
-printf "\e[32m%s\e[0m\n" "nREPL server up"
-
-clojure -X:run-client 2>&1 | sed -u -e "s/.*/clojure -X:run-client &/"
-
-echo "run.sh about to exit"
+#echo "run.sh about to exit"

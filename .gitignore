@@ -4,3 +4,4 @@ target/
 sout*.log
 nrepl-consumer/.cpcache/
 nrepl-consumer/.clj-kondo/
+nrepl-consumer/.max_prefix.txt

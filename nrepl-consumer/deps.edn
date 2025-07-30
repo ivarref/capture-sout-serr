@@ -7,4 +7,6 @@
 
  :aliases
  {:run-server
-  {:exec-fn com.github.ivarref.run-server/run-server}}}
+  {:exec-fn com.github.ivarref.run-server/run-server}
+  :run-client
+  {:exec-fn com.github.ivarref.run-server/run-client}}}

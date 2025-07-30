@@ -1,5 +1,6 @@
 (ns com.github.ivarref.run-server
-  (:require [nrepl.server :as nrepl-server])
+  (:require [nrepl.server :as nrepl-server]
+            [nrepl.core :as nrepl-client])
   (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)
            (java.io OutputStreamWriter)))
 
@@ -17,6 +18,22 @@
     @(promise)
     (catch Exception e
       (binding [*out* *err*]
-        (println "Received exception:" e)))
+        (println "Server received exception:" e)))
     (finally
       (println "nREPL server exiting"))))
+
+(defn run-client [_]
+  (try
+    (println "Starting client server ...")
+    #_(System/setOut replay-stream)
+    #_(alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream)))
+    #_(println "not shown on -X:run-server")
+    #_(nrepl-server/start-server :port 7888)
+    (nrepl-client/connect :host "127.0.0.1" :port 7888)
+    @(promise)
+    (catch Exception e
+      (binding [*out* *err*]
+        (println "Client received exception:" e)))
+    (finally
+      (println "nREPL client exiting"))))
+
