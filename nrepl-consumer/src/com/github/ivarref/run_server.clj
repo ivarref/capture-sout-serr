@@ -1,8 +1,8 @@
 (ns com.github.ivarref.run-server
   (:require [nrepl.core :as nrepl]
-            [nrepl.server :as nrepl-server]
-            [nrepl.core :as nrepl-client])
-  (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream)
+            [nrepl.server :as nrepl-server])
+  (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream
+                                               SomeClassThatPrintsAsPartOfInitialization)
            (java.io OutputStreamWriter)))
 
 (set! *warn-on-reflection* true)
@@ -11,14 +11,14 @@
 
 (defonce original-stdout System/out)
 
-(defonce replay-stream (ReplayConsumePrintStream.))
-
 (defn run-server [_]
   (try
     (println "Starting nREPL server ...")
-    (System/setOut replay-stream)
-    (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream)))
+    (let [replay-stream (ReplayConsumePrintStream.)]
+      (System/setOut replay-stream)
+      (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream))))
     (println "not shown on -X:run-server, but will be buffered")
+    (SomeClassThatPrintsAsPartOfInitialization.)
     (nrepl-server/start-server :port 7888)
     (future
       (loop [i 1]

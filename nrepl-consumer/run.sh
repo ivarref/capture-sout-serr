@@ -19,6 +19,8 @@ DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 cd "$DIR"
 
+SELF_NAME="$(basename "$0")"
+
 if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
   :
 else
@@ -27,7 +29,7 @@ else
   bash -c "cd \"$DIR/..\" && ./test_replay.sh --skip-compile"   2>&1 | ./prefix.py "test_replay.sh"
   bash -c "cd \"$DIR/..\" && ./test_truncate.sh --skip-compile" 2>&1 | ./prefix.py "test_truncate.sh"
   bash -c "cd \"$DIR/..\" && lein install"                      2>&1 | ./prefix.py "lein install"
-  printf "\e[32m%s\e[0m\n" "Tests passed and install OK"             | ./prefix.py "$0"
+  printf "\e[32m%s\e[0m\n" "Tests passed and install OK"             | ./prefix.py "$SELF_NAME"
 #  printf '\033[3J' # clear scrollback
 #  printf '\033[2J' # clear whole screen without moving the cursor
 #  printf '\033[H' # move cursor to top left of the screen
@@ -36,7 +38,7 @@ fi
 echo 'Truncate' > debug.log
 echo 'Truncate' > debug2.log
 
-printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$0"
+printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$SELF_NAME"
 
 env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 | ./prefix.py "clojure -X:run-server" &
 
@@ -45,9 +47,9 @@ tail -f ./debug2.log 2>&1 | ./prefix.py "debug2.log" &
 
 bash -c "./wait_nrepl.sh" 2>&1 | ./prefix.py "wait_nrepl.sh"
 
-printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$0"
+printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$SELF_NAME"
 
-printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$0"
+printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$SELF_NAME"
 #clojure -X:run-client 2>&1 | ./prefix.py "clojure -X:run-client"
 
 #cat ./client.clj | clj -M -m nrepl.cmdline --connect --host localhost --port 7888 | ./prefix.py "nrepl-client"
@@ -78,7 +80,7 @@ printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.p
 #printf "\e[0m%s\e[0m\n" "Contents of debug2.log:" | ./prefix.py "$0"
 #cat ./debug2.log | ./prefix.py "cat ./debug2.log"
 
-printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ..." | ./prefix.py "$0"
+printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ..." | ./prefix.py "$SELF_NAME"
 wait $(jobs -p)
 
 EXITCOLOR='32'
