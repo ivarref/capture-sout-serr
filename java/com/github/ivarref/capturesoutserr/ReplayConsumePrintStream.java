@@ -72,7 +72,7 @@ public class ReplayConsumePrintStream extends PrintStream {
 
     @Override
     public String toString() {
-        return "com.github.ivarref.capturesoutserr.ReplayConsumePrintStream@" + id;
+        return "com.github.ivarref.capturesoutserr.ReplayConsumePrintStream@" + id + ",consumer=" + consumer;
     }
 
     @Override
