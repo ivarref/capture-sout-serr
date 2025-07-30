@@ -2,11 +2,12 @@
 import sys
 import signal
 
+def signal_handler(sig, frame):
+    pass
+
 if __name__ == "__main__":
     assert 2 == len(sys.argv)
 
-    def signal_handler(sig, frame):
-        pass
     signal.signal(signal.SIGINT, signal_handler)
 
     with open('./.max_prefix.txt') as fd:
