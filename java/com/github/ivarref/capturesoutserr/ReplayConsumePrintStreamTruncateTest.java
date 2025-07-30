@@ -6,25 +6,27 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
-public class ReplayConsumePrintStreamTest {
-
+public class ReplayConsumePrintStreamTruncateTest {
     public static final PrintStream stdOutOriginal = System.out;
 
     public static void main(String[] args) {
         try (final ReplayConsumePrintStream newStdOut = new ReplayConsumePrintStream()) {
-            System.out.println("Starting ReplayConsumePrintStreamTest");
+            System.out.println("Starting ReplayConsumePrintStreamTruncateTest");
             System.setOut(newStdOut);
+            for (int i = 0; i< 100_000; i++) {
+                System.out.println("" + i);
+            }
             System.out.println("This message should appear in sout.log æøå");
             System.out.println("ሰላም አለም");
             System.out.println("ഹലോ വേൾഡ്");
             System.out.println("你好世界");
             stdOutOriginal.println("Original stdout still works!");
-            newStdOut.setConsumer(ReplayConsumePrintStreamTest::logToFile);
+            newStdOut.setConsumer(ReplayConsumePrintStreamTruncateTest::logToFile);
         }
     }
 
     public static synchronized void logToFile(final String msg) {
-        final String fileName = "sout_replay.log";
+        final String fileName = "sout_truncate.log";
         try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
              final PrintWriter pw = new PrintWriter(fw)) {
             pw.println(msg);

@@ -1,5 +1,4 @@
 pom.xml
 target/
 .clj-kondo/
-sout.log
-sout_replay.log
+sout*.log

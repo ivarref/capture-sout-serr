@@ -6,11 +6,11 @@ rm -rf ./target || true
 
 lein javac
 
-file1="./sout_replay.log"
-file2="./expected_stdout.log"
+file1="./sout_truncate.log"
+file2="./expected_truncate.log"
 rm -f "$file1" || true
 
-java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ReplayConsumePrintStreamTest
+java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ReplayConsumePrintStreamTruncateTest
 
 if [ ! -f "$file1" ]; then
   printf 'The file "%s" does not exist\n' "$file1"

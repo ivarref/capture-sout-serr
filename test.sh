@@ -12,7 +12,15 @@ rm -f "$file1" || true
 
 java -cp $(pwd)/target/classes com.github.ivarref.capturesoutserr.ConsumePrintStreamTest
 
-if cmp -s "$file1" "$file2"; then
+if [ ! -f "$file1" ]; then
+  printf 'The file "%s" does not exist\n' "$file1"
+  echo -e "\e[31mTest FAIL\e[0m"
+  exit 1
+elif [ ! -f "$file2" ]; then
+  printf 'The file "%s" does not exist\n' "$file2"
+  echo -e "\e[31mTest FAIL\e[0m"
+  exit 1
+elif cmp -s "$file1" "$file2"; then
   printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2"
   echo -e "\e[32mTest OK\e[0m"
   exit 0
