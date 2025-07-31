@@ -11,7 +11,7 @@ public class ReplayConsumePrintStreamTest {
     public static final PrintStream stdOutOriginal = System.out;
 
     public static void main(String[] args) {
-        try (final ReplayConsumePrintStream newStdOut = new ReplayConsumePrintStream()) {
+        try (final ReplayConsumePrintStream newStdOut = new ReplayConsumePrintStream(null, true)) {
             System.out.println("Starting ReplayConsumePrintStreamTest");
             System.setOut(newStdOut);
             System.out.println("This message should appear in sout.log æøå");

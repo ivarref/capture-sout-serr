@@ -21,7 +21,7 @@
     (when (.exists (io/file "./.nrepl_client_done"))
       (io/delete-file "./.nrepl_client_done"))
     (println "Starting nREPL server ...")
-    (let [replay-stream (ReplayConsumePrintStream. System/out)]
+    (let [replay-stream (ReplayConsumePrintStream. System/out true)]
       (System/setOut replay-stream)
       (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream))))
     (println "not shown on -X:run-server, but will be buffered")

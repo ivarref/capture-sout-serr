@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+// Some code copied from sun.rmi.runtime.Log.LoggerPrintStream
 public class ReplayConsumePrintStream extends PrintStream {
 
     public static final int BUFFER_SIZE = 100_000;
@@ -20,21 +21,21 @@ public class ReplayConsumePrintStream extends PrintStream {
      */
     private final ByteArrayOutputStream bufOut;
     private Consumer<String> consumer;
-    private final List<String> buffer = new ArrayList<>(BUFFER_SIZE);
+    private final List<String> buffer;
     private final PrintStream copyStream;
+    private final boolean buffering;
 
-    public ReplayConsumePrintStream() {
-        super(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
-        this.bufOut = (ByteArrayOutputStream) super.out;
-        this.id = instanceNumber.getAndIncrement();
-        this.copyStream = null;
-    }
-
-    public ReplayConsumePrintStream(final PrintStream copyToStream) {
+    public ReplayConsumePrintStream(final PrintStream copyToStream, boolean doBuffer) {
         super(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
         this.bufOut = (ByteArrayOutputStream) super.out;
         this.id = instanceNumber.getAndIncrement();
         this.copyStream = copyToStream;
+        this.buffering = doBuffer;
+        if (doBuffer) {
+            buffer = new ArrayList<>(BUFFER_SIZE);
+        } else {
+            buffer = null;
+        }
     }
 
     private synchronized void debug(String msg) {
@@ -58,27 +59,35 @@ public class ReplayConsumePrintStream extends PrintStream {
 
     public synchronized void setConsumer(Consumer<String> lineConsumer) {
         consumer = lineConsumer;
-        for (String line : buffer) {
-            debug("UNBUFFERING: " + line);
-            try {
-                consumer.accept(line);
-            } catch (Throwable t) {
-                debug("UNBUFFERING FAILED: " + t.getMessage());
+        if (buffering) {
+            for (String line : buffer) {
+                debug("UNBUFFERING: " + line);
+                try {
+                    consumer.accept(line);
+                } catch (Throwable t) {
+                    debug("UNBUFFERING FAILED: " + t.getMessage());
+                }
             }
+            buffer.clear();
+        } else {
+            debug("NO UNBUFFERING");
         }
-        buffer.clear();
     }
 
     private synchronized void consumeLine(final String line) {
         if (consumer == null) {
-            if (buffer.size() == BUFFER_SIZE) {
-                buffer.clear();
-                buffer.add("(Stream truncated ...)");
-                buffer.add(line);
+            if (buffering) {
+                if (buffer.size() == BUFFER_SIZE) {
+                    buffer.clear();
+                    buffer.add("(Stream truncated ...)");
+                    buffer.add(line);
+                } else {
+                    buffer.add(line);
+                }
+                debug("BUFFERING: " + line);
             } else {
-                buffer.add(line);
+                debug("NOT BUFFERING: " + line);
             }
-            debug("BUFFERING: " + line);
         } else {
             debug("DIRECT SEND: " + line);
             try {

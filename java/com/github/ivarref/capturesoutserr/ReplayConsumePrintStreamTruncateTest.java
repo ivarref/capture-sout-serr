@@ -10,7 +10,7 @@ public class ReplayConsumePrintStreamTruncateTest {
     public static final PrintStream stdOutOriginal = System.out;
 
     public static void main(String[] args) {
-        try (final ReplayConsumePrintStream newStdOut = new ReplayConsumePrintStream()) {
+        try (final ReplayConsumePrintStream newStdOut = new ReplayConsumePrintStream(null, true)) {
             System.out.println("Starting ReplayConsumePrintStreamTruncateTest");
             System.setOut(newStdOut);
             for (int i = 0; i< 100_000; i++) {
