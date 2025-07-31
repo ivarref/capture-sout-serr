@@ -18,6 +18,8 @@
 
 (defn run-server [_]
   (try
+    (when (.exists (io/file "./.nrepl_client_done"))
+      (io/delete-file "./.nrepl_client_done"))
     (println "Starting nREPL server ...")
     (let [replay-stream (ReplayConsumePrintStream. System/out)]
       (System/setOut replay-stream)
@@ -48,8 +50,6 @@
                 (.countDown latch)))))
         (.await latch)
         (debug "latch released")
-        @client-done?
-        (debug "client marked as done")
         (while (not (.exists (io/file "./.nrepl_client_done")))
           (Thread/sleep 16))
         (debug "client exited")))

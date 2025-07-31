@@ -50,8 +50,8 @@ PROCESS_GROUP="$$"
 CLOJURE_SERVER_PID="$!"
 
 TAIL_PID="NONE"
-#{ { tail -f ./debug.log 2>&1 | ./prefix.py "debug.log"; } || true; } &
-#TAIL_PID="$!"
+{ { tail -f ./debug.log 2>&1 | ./prefix.py "debug.log"; } || true; } &
+TAIL_PID="$!"
 
 bash -c "./wait_nrepl.sh" 2>&1 | ./prefix.py "wait_nrepl.sh"
 
@@ -60,7 +60,8 @@ printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$SELF_NAME"
 printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$SELF_NAME"
 #clojure -X:run-client 2>&1 | ./prefix.py "clojure -X:run-client"
 
-{ cat ./src/com/github/ivarref/repl.clj | clj -M -m nrepl.cmdline \
+{ cat ./wait_output.clj | \
+  env NREPL_FORWARD_STDOUT='TRUE' clj -M -m nrepl.cmdline \
   --connect --host localhost --port 7888 \
   && echo 'Exited with exit code 0' || echo -e "\e[31mFailed with exit code $?\e[0m";
   touch './.nrepl_client_done'; } \
@@ -71,7 +72,7 @@ printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID"
 wait "$CLOJURE_SERVER_PID"
 printf "Waiting for nREPL server process %s to exit ... OK\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
 
-printf "Terminating tail command with pid %s...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
+printf "Terminating tail command with pid %s ...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
 
 if [[ "$TAIL_PID" == "NONE" ]]; then
   :

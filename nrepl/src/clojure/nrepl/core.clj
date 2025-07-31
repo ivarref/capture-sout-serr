@@ -2,12 +2,14 @@
   "High level nREPL client support."
   {:author "Chas Emerick"}
   (:require
-   clojure.set
-   [nrepl.misc :refer [uuid]]
-   [nrepl.tls :as tls]
-   [nrepl.transport :as transport]
-   [nrepl.version :as version]
-   [nrepl.socket :as socket]))
+    clojure.set
+    [clojure.string :as str]
+    [nrepl.misc :refer [uuid]]
+    [nrepl.tls :as tls]
+    [nrepl.transport :as transport]
+    [nrepl.version :as version]
+    [nrepl.socket :as socket]
+    [clojure.java.io :as io]))
 
 (defn response-seq
   "Returns a lazy seq of messages received via the given Transport.
@@ -106,15 +108,29 @@
         (throw (IllegalStateException.
                 (str "Could not open new session; :clone response: " resp))))))
 
+(def ^:private forward-stdout-string
+  "(do\n  (import '(com.github.ivarref.capturesoutserr ReplayConsumePrintStream))\n  (let [curr-out *out*\n        to-client (fn [lin]\n                      (binding [*out* curr-out]\n                               (println lin)))]\n       (assert (instance? ReplayConsumePrintStream System/out))\n       (.setConsumer ^ReplayConsumePrintStream System/out to-client)))")
+
 (defn client-session
   "Returns a function of one argument.  Accepts a message that is sent via the
    client provided with a fixed :session id added to it.  Returns the
    head of the client's response seq, filtered to include only
    messages related to the :session id that will terminate when the session is
    closed."
-  [client & {:keys [session clone]}]
-  (let [session (or session (apply new-session client (when clone [:clone clone])))]
-    (delimited-transport-seq client #{"session-closed"} {:session session})))
+  [client & {:keys [session clone awaiting]}]
+  (let [session (or session (apply new-session client (when clone [:clone clone])))
+        client-session (delimited-transport-seq client #{"session-closed"} {:session session})]
+    (when (or (= "true" (str/lower-case (or (System/getenv "NREPL_FORWARD_STDOUT") "false"))))
+      (when awaiting
+        (println "forwarding server stdout to this remote session")
+        (let [code-str forward-stdout-string
+              id (str "nrepl.cmdline-" (uuid))]
+          (swap! awaiting assoc id (promise))
+          (doseq [res (message client-session {:op "eval" :code code-str :id id})]
+            nil #_(when (:ns res) (set! *ns* (create-ns (symbol (:ns res))))))
+          @(get @awaiting id)
+          (swap! awaiting dissoc id))))
+    client-session))
 
 (defn combine-responses
   "Combines the provided seq of response messages into a single response map.
