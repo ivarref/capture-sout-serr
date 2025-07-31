@@ -1,0 +1,53 @@
+= Extensions
+
+Here's a list of notable nREPL extensions (middleware or transports) you might encounter in the wild.
+
+== Official
+
+Official extensions are developed and maintained by nREPL's Core Team and are
+hosted under the nREPL GitHub organization.
+
+=== Middleware
+
+==== ClojureScript Support
+
+* https://github.com/nrepl/piggieback[Piggieback]
+
+The following ClojureScript REPLs are leveraging piggieback internally to provide
+nREPL support.
+
+* https://github.com/nrepl/weasel[Weasel]
+* https://github.com/bhauman/lein-figwheel[figwheel]
+* https://github.com/bhauman/figwheel-main[figwheel-main]
+* https://github.com/thheller/shadow-cljs[shadow-cljs] (it actually
+only stubs the piggieback API, leverages its own nREPL middleware
+internally for ClojureScript evaluation)
+
+=== Transports
+
+==== HTTP Support
+
+* https://github.com/nrepl/drawbridge[drawbridge]
+
+==== Transit Support
+
+* https://github.com/nrepl/fastlane[fastlane]
+
+== Third-party
+
+Third-party extensions are not developed and maintained by nREPL's Core Team and are
+hosted outside the nREPL GitHub organization.
+
+=== Middleware
+
+==== Clojure Editor Support
+
+* https://github.com/clojure-emacs/cider-nrepl[cider-nrepl]: A collection of nREPL middleware designed to enhance CIDER (and Clojure editors in general).
+* https://github.com/clojure-emacs/refactor-nrepl[refactor-nrepl]: A collection of functionality designed to support editor refactoring features.
+* https://github.com/liquidz/iced-nrepl[iced-nrepl]: nREPL middleware to support vim-iced.
+* https://github.com/nubank/midje-nrepl[midje-nrepl]: nREPL middleware to run Midje tests.
+
+==== Debugging
+
+* https://clojure-emacs.github.io/sayid/[sayid]: A powerful tracing/debugging tool. It is a great alternative of CIDER-nREPL's basic tracing functionality.
+* https://github.com/vvvvalvalval/scope-capture-nrepl[scope-capture-nrepl]: A companion library to scope-capture, providing an nREPL middleware that lets you put your REPL in the context of an Execution Point.

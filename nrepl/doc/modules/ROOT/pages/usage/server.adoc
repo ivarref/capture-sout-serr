@@ -1,0 +1,411 @@
+= nREPL Server
+
+== Starting a server
+
+There are many ways to start an nREPL server. Most often you'd start
+it using some build tool, but you can also embed the server in your
+application and start it from it. Here we'll outline the most
+popular options available for you today.
+
+=== Using Clojure CLI tools
+
+NOTE: This section assumes you're using Clojure 1.9+.
+
+If you're into the `clj` command you can take advantage of nREPL's built-in command-line interface
+(`nrepl.cmdline`).
+
+Add this alias to `~/.clojure/deps.edn`:
+
+[source,clojure]
+----
+{
+;; ...
+:aliases {:nREPL
+          {:extra-deps
+            {nrepl/nrepl {:mvn/version "1.3.1"}}}}
+}
+----
+
+Then you can simply run the nREPL server in headless mode like this:
+
+[source,shell]
+----
+$ clj -M:nREPL -m nrepl.cmdline
+----
+
+A good practice is add whatever nREPL middleware you want to use to
+the `nREPL` profile, so you can easily activate them when needed. Here's
+how you can easily start a ClojureScript capable nREPL:
+
+[source,clojure]
+----
+{
+;; ...
+:aliases {:nREPL
+          {:extra-deps
+           {nrepl/nrepl {:mvn/version "1.3.1"}
+            cider/piggieback {:mvn/version "0.4.2"}}}}
+}
+----
+
+[source,shell]
+----
+$ clj -M:nREPL -m nrepl.cmdline --middleware "[cider.piggieback/wrap-cljs-repl]"
+----
+
+By default, nREPL listens for connections on a randomly chosen local
+port with no authentication, but you can specify the address or port,
+or, if you're using JDK 16 or newer, or you add a
+https://kohlschutter.github.io/junixsocket/[junixsocket] dependency,
+you can ask it to listen on a UNIX domain (filesystem) socket instead:
+
+[source,clojure]
+----
+{
+;; ...
+:aliases {:nREPL
+          {:extra-deps
+           ;; UNIX domain socket support was added in 1.0.0
+           {nrepl/nrepl {:mvn/version "1.3.1"}
+            com.kohlschutter.junixsocket/junixsocket-core {:mvn/version "2.3.2"}}}}
+}
+----
+
+[source,shell]
+----
+$ mkdir -m go-rwx nrepl-test
+$ clj -M:nREPL -m nrepl.cmdline --socket nrepl-test/socket
+----
+
+TIP: UNIX domain sockets know that they're running locally, so they
+can avoid some checks and operations (like routing), which makes them faster and
+lighter than TCP/IP sockets. In practice this means they are a better option
+for local development.
+
+Here's a listing of all the options available via nREPL's command-line
+interface (this output was simply generated with `--help`):
+
+....
+-i/--interactive            Start nREPL and connect to it with the built-in client.
+-c/--connect                Connect to a running nREPL with the built-in client.
+-C/--color                  Use colors to differentiate values from output in the REPL. Must be combined with --interactive.
+-b/--bind ADDR              Bind address, by default "127.0.0.1".
+-h/--host ADDR              Host address to connect to when using --connect. Defaults to "127.0.0.1".
+-p/--port PORT              Start nREPL on PORT. Defaults to 0 (random port) if not specified.
+-s/--socket PATH            Start nREPL on filesystem socket at PATH.
+--ack ACK-PORT              Acknowledge the port of this server to another nREPL server running on ACK-PORT.
+-n/--handler HANDLER        The nREPL message handler to use for each incoming connection; defaults to the result of `(nrepl.server/default-handler)`. Must be expressed as a namespace-qualified symbol. The underlying var will be automatically `require`d.
+-m/--middleware MIDDLEWARE  A sequence of vars (expressed as namespace-qualified symbols), representing middleware you wish to mix in to the nREPL handler. The underlying vars will be automatically `require`d.
+-t/--transport TRANSPORT    The transport to use (default `nrepl.transport/bencode`), expressed as a namespace-qualified symbol. The underlying var will be automatically `require`d.
+--help                      Show this help message.
+....
+
+[NOTE]
+====
+When defining an alias in `deps.edn` with `:main-opts`, spaces between sequence values will not work. Use comma separated values instead. Here's a simple example:
+
+[source,clojure]
+----
+:main-opts ["-m" "nrepl.cmdline"
+            "-b" "0.0.0.0"
+            "-p" "12345"
+            "--middleware" "[cider.nrepl/cider-middleware,refactor-nrepl.middleware/wrap-refactor]"]
+----
+
+Some additional details on the subject can be found https://ask.clojure.org/index.php/9034/clj-m-works-from-shell-but-not-as-alias[here].
+====
+
+=== Using Leiningen
+
+https://github.com/technomancy/leiningen[Leiningen] has built-in support for
+nREPL. Just do:
+
+[source,shell]
+----
+$ lein repl
+----
+
+And you're all set. By default Leiningen will also connect to the running nREPL server using the
+popular command-line nREPL client https://github.com/trptcolin/reply/[REPL-y]. If you don't need the terminal REPL you can
+also start nREPL in headless mode:
+
+[source,shell]
+----
+$ lein repl :headless
+----
+
+This will start nREPL listening on `localhost` and a random port. You can specify the host and port explicitly like this:
+
+[source,shell]
+----
+$ lein repl :headless :host some-host :port 1234
+----
+
+Alternatively you bind nREPL to an Unix domain socket like this:
+
+[source,shell]
+----
+$ lein repl :headless :socket path/to/socket
+----
+
+NOTE: You'll need Leiningen 2.9.9 or newer for the command above to work.
+
+IMPORTANT: As noted earlier - using Unix sockets improves your security, as that's a connection that's guaranteed to be local. You should always be careful not to start nREPL on a public host and port.
+
+You can also specify a lot of nREPL's configuration options in the `:repl` profile in your `project.clj` file:
+
+[source,clojure]
+----
+;; Options to change the way the REPL behaves.
+:repl-options { ;; Specify the string to print when prompting for input.
+               ;; defaults to something like (fn [ns] (str *ns* "=> "))
+               :prompt (fn [ns] (str "your command for <" ns ">? " ))
+               ;; What to print when the repl session starts.
+               :welcome (println "Welcome to the magical world of the repl!")
+               ;; Specify the ns to start the REPL in (overrides :main in
+               ;; this case only)
+               :init-ns foo.bar
+               ;; This expression will run when first opening a REPL, in the
+               ;; namespace from :init-ns or :main if specified.
+               :init (println "here we are in" *ns*)
+               ;; Print stack traces on exceptions (highly recommended, but
+               ;; currently overwrites *1, *2, etc).
+               :caught clj-stacktrace.repl/pst+
+               ;; Skip's the default requires and printed help message.
+               :skip-default-init false
+               ;; Customize the socket the repl task listens on and
+               ;; attaches to.  Specify either a filesystem :socket
+               ;; (where the parent directory should be used to
+               ;; control access since POSIX doesn't require
+               ;; respecting the socket permissions):
+               :socket "/path/to/the/socket"
+               ;; or a network :host and/or :port
+               ;;   :host "0.0.0.0"
+               ;;   :port 4001
+               ;; If nREPL takes too long to load it may timeout,
+               ;; increase this to wait longer before timing out.
+               ;; Defaults to 30000 (30 seconds)
+               :timeout 40000
+               ;; nREPL server customization
+               ;; Only one of #{:nrepl-handler :nrepl-middleware}
+               ;; may be used at a time.
+               ;; Use a different server-side nREPL handler.
+               :nrepl-handler (nrepl.server/default-handler)
+               ;; Add server-side middleware to nREPL stack.
+               :nrepl-middleware [my.nrepl.thing/wrap-amazingness
+                                  ;; TODO: link to more detailed documentation.
+                                  ;; Middleware without appropriate metadata
+                                  ;; (see nrepl.middleware/set-descriptor!
+                                  ;; for details) will simply be appended to the stack
+                                  ;; of middleware (rather than ordered based on its
+                                  ;; expectations and requirements).
+                                  (fn [handler]
+                                    (fn [& args]
+                                      (prn :middle args)
+                                      (apply handler args)))]}
+----
+
+Refer to Leiningen's https://github.com/technomancy/leiningen/blob/main/sample.project.clj[sample.project.clj] for an up-to-date version of those options.
+
+[TIP]
+====
+You can see the version of nREPL used by Leiningen in the message that it will display once the REPL
+has been started.
+
+[source,shell]
+----
+nREPL server started on port 56249 on host 127.0.0.1 - nrepl://127.0.0.1:56249
+REPL-y 0.4.3, nREPL 1.3.1
+Clojure 1.10.0
+Java HotSpot(TM) 64-Bit Server VM 10.0.1+10
+    Docs: (doc function-name-here)
+          (find-doc "part-of-name-here")
+  Source: (source function-name-here)
+ Javadoc: (javadoc java-object-or-class-here)
+    Exit: Control+D or (exit) or (quit)
+ Results: Stored in vars *1, *2, *3, an exception in *e
+
+user=>
+----
+
+Here you can see that Leiningen has started an nREPL 1.3.1 server and has connected to it using REPL-y 0.4.3.
+
+====
+
+=== Using Gradle
+
+The https://github.com/clojurephant/clojurephant[Clojurephant] plugin provides
+Clojure/ClojureScript support for Gradle, including built-in nREPL support:
+
+[source,shell]
+---
+$ ./gradlew clojureRepl
+---
+
+NOTE: Clojurephant will only start an nREPL server. You will need to use a separate
+nREPL client, such as your editor.
+
+See https://clojurephant.dev[Clojurephant's docs] for other configuration options.
+
+== Embedding nREPL
+
+All the above options are typically used during the development of an application.
+It can also be extremely useful to have your application host a REPL
+server wherever it might be deployed; this can greatly simplify debugging,
+sanity-checking, panicked code patching, and so on.
+
+WARNING: You should think long and hard before hot-patching code in
+production, but that's a subject for an unrelated discussion.
+
+nREPL provides a socket-based server that you can trivially start from your
+application.  xref:installation.adoc[Add it to your project's dependencies], and add code
+like this to your app:
+
+[source,clojure]
+----
+=> (require '[nrepl.server :refer [start-server stop-server]])
+nil
+=> (defonce server (start-server :port 7888))
+='user/server
+----
+
+If you want your nREPL server to listen on a particular address instead of the
+default one, you can use the `:bind` keyword to specify the address to
+listen on. E.g., to make the nREPL server listen on address 172.18.0.5
+and port 4001:
+
+[source,clojure]
+----
+=> (require '[nrepl.server :refer [start-server stop-server]])
+nil
+=> (defonce server (start-server :bind "172.18.0.5" :port 4001))
+='user/server
+----
+
+WARNING: Keep in mind that running a nREPL server on a public address
+is an epic security hole! As the connections are insecure (no
+authentication, no authorization) by default, anyone can connect to
+your app and modify its behaviour or run code on the remote host.
+
+You can also ask nREPL to listen on a UNIX domain (filesystem) socket
+with the `:socket` keyword (if you're using JDK 16 or newer add a
+https://kohlschutter.github.io/junixsocket/[junixsocket] dependency),
+which should be as secure as the access to the socket\'s parent
+directories (POSIX doesn't specify the effect of the socket file's
+permissions (if any), and some systems have ignored them):
+
+[source,clojure]
+----
+=> (require '[nrepl.server :refer [start-server stop-server]])
+nil
+=> (defonce server (start-server :socket "/some/where/safe/nrepl"))
+='user/server
+----
+
+Depending on what the lifecycle of your application is, whether you want to be
+able to easily restart the server, etc., you might want to put the value
+`start-server` returns into an atom or somesuch.  Anyway, once your app is
+running an nREPL server, you can connect to it from a tool like Leiningen or
+Counterclockwise or REPL-y, or from another Clojure process, as shown
+ xref:usage/clients.adoc[here].
+
+You can stop the server with `(stop-server server)`.
+
+=== Embedding in a Java application
+
+Embedding nREPL in an existing Java application can also be useful - if your Java code allows for it you can still introspect values and call methods while the app is running. Since nREPL currently does not have a Java API, you'll need to use Clojure's interop features.
+
+[source,java]
+----
+import clojure.java.api.Clojure;
+import clojure.lang.IFn;
+
+public class App {
+    public static void main(String[] args) {
+        IFn require = Clojure.var("clojure.core", "require");
+        require.invoke(Clojure.read("nrepl.server"));
+        IFn start = Clojure.var("nrepl.server", "start-server");
+        int port = 7888;
+        start.invoke(Clojure.read(":port"), Clojure.read(Integer.toString(port)));
+        System.out.println("nrepl server started on port " + port);
+    }
+}
+----
+
+You can pull in the needed dependencies by adding this to your pom.xml:
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>nrepl</groupId>
+        <artifactId>nrepl</artifactId>
+        <version>1.3.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>clojure</artifactId>
+        <version>1.10.0</version>
+    </dependency>
+</dependencies>
+----
+
+A more complete example, including the use of custom middleware, can be found https://github.com/nrepl/nrepl-java-example[here].
+
+== Server options
+
+Note that nREPL is not limited to its default messaging protocol, nor to its
+default use of sockets.  nREPL provides a _transport_ abstraction for
+implementing support for alternative protocols and connection methods.
+Alternative transport implementations are available, and implementing your own
+is not difficult; read more about transports xref:design/transports.adoc[here].
+
+=== Server Configuration
+
+Starting with version 0.5 you can configure certain aspects of the
+nREPL server's behaviour via configuration files.
+
+There are two configuration files:
+
+* Global configuration file `.nrepl/nrepl.edn`
+* Local configuration file `.nrepl.edn`
+
+The global configuration file is useful for setting options that you'd
+like to use for all the nREPL servers that you start (e.g. a common
+`bind-address`, `transport`, `handler`, etc).
+
+TIP: You can alter the location of the global configuration file
+via the environment variable `NREPL_CONFIG_DIR`.
+
+The local configuration file should be placed in the directory from
+which you're starting the server (normally the root directory of your
+project). Its purpose is to set project-specific settings (e.g. a common port
+you always want to use with a particular project). Any setting in `.nrepl.edn`
+will take precedence over a setting in `.nrepl/nrepl.edn`.
+
+NOTE: Settings passed via the command-line interface will take
+precedence over settings specified via the configuration files.
+
+Here's an example global configuration file:
+
+..nrepl/nrepl.edn
+[source,clojure]
+----
+{:bind         "::"
+ :transport    nrepl.transport/tty
+ :middleware   [some.ns/mw1 some.ns/mw1]}
+----
+
+IMPORTANT: You should refer to vars only as symbols.
+
+And this is an example of a local config file:
+
+..nrepl.edn
+[source,clojure]
+----
+{:bind         "localhost"
+ :port         12345
+ :ack          23456
+ :handler      some.ns/awesome-handler
+ :transport    nrepl.transport/bencode}
+----

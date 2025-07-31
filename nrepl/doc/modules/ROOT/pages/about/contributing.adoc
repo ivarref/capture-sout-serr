@@ -1,0 +1,122 @@
+= Contributing
+
+== Issues
+
+Report issues and suggest features and improvements on the
+https://github.com/nrepl/nrepl/issues[GitHub issue tracker]. Don't ask
+questions on the issue tracker - use the xref:about/support.adoc[support channels] instead.
+
+If you want to file a bug, please provide all the necessary info listed in
+our issue reporting template (it's loaded automatically when you create a
+new GitHub issue).
+
+== Patches
+
+Patches in any form are always welcome! GitHub pull requests are even better! :-)
+
+Before submitting a patch or a pull request make sure all tests are
+passing and that your patch is in line with the https://github.com/nrepl/nrepl/blob/master/.github/CONTRIBUTING.md[contribution guidelines].
+
+== Documentation
+
+Good documentation is just as important as good code.
+
+Consider improving and extending this manual.
+
+=== Working on the Docs Site
+
+The https://nrepl.org[documentation site] is generated from the AsciiDoc files in the https://github.com/nrepl/nrepl/tree/master/doc[doc] folder of nREPL's GitHub repo and is published to https://nrepl.org.
+https://antora.org[Antora] is used to convert the manual into HTML.
+The filesystem layout is described at https://docs.antora.org/antora/2.0/component-structure/.
+
+To make changes to the manual you simply have to change the files under `doc`.
+The site will be regenerated manually periodically.
+
+==== Installing Antora
+
+NOTE: The instructions here assume you already have (the right version of) node.js installed.
+
+Installing the Antora is super simple:
+
+[source]
+----
+$ npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3
+----
+
+Check out https://docs.antora.org/antora/2.3/install/install-antora/[the detailed installation instructions]
+if you run into any problems.
+
+==== Building the Site
+
+You can build the documentation locally from the https://github.com/nrepl/nrepl.org[nrepl.org] repo.
+
+[source]
+----
+$ cd nrepl.org
+$ antora --pull antora-playbook.yml
+----
+
+After you're done with the initial setup you can use the `deploy` script to push changes to the site:
+
+[source]
+----
+./deploy
+----
+
+NOTE: You'll need commit access to the repository for this to work.
+
+To check the generated site you can simply open `docs/index.html` in your favourite browser.
+
+If you want to make changes to the manual's page structure you'll have to edit
+https://github.com/nrepl/nrepl/blob/master/doc/modules/ROOT/nav.adoc[nav.adoc].
+
+==== Testing Local Changes
+
+By default Antora will build the documentation for nREPL's `master` branch and all recent stable
+releases by fetching the data from nREPL main GitHub repository.
+
+If you want to check changes you've made locally you'll have to update the `antora-playbook.yml`
+file in the `nrepl.org` repository. There you should instruct Antora to build the docs from your
+local git repo instead of the main repo on GitHub:
+
+[source,yaml]
+----
+# you have to change this
+content:
+   sources:
+   - url: https://github.com/nrepl/nrepl.git
+     branches: ['master']
+     tags: ['0.5.3', '0.6.0', '0.7.0', '0.8.0']
+
+# to something like
+content:
+   sources:
+   - url: /path/to/local/nrepl/clone
+     branches: ['issues/207']
+     start_path: doc
+----
+
+== Funding
+
+While nREPL is free software and will always be, the project would benefit immensely from some funding.
+Raising a monthly budget of a couple of thousand dollars would make it possible to pay people to work on
+certain complex features, fund other development related stuff (e.g. hardware, conference trips) and so on.
+Raising a monthly budget of over $5000 would open the possibility of someone working full-time on the project
+which would speed up the pace of development significantly.
+
+We welcome both individual and corporate sponsors! We also offer a wide array of funding channels to account
+for your preferences (although currently https://opencollective.com/nrepl[Open Collective] is our preferred funding platform).
+
+If you're working in a company that's making significant use of nREPL we'd appreciate it if you suggest to your company
+to become a nREPL sponsor.
+
+You can support the development of nREPL, CIDER, https://github.com/clojure-emacs/clojure-mode[clojure-mode] and https://github.com/clojure-emacs/inf-clojure[inf-clojure] via
+https://opencollective.com/nrepl[Open Collective],
+https://https://github.com/sponsors/bbatsov[GitHub Sponsors]
+https://www.patreon.com/bbatsov[Patreon] and
+https://www.paypal.me/bbatsov[PayPal].
+
+=== Open Collective
+
+* https://opencollective.com/nrepl#backer[Become a backer] (for individuals)
+* https://opencollective.com/nrepl#sponsor[Become a sponsor] (for companies)

@@ -1,0 +1,216 @@
+version: 2.1
+
+# Default settings for executors
+
+orbs:
+  win: circleci/windows@5.0.0
+
+defaults: &defaults
+  working_directory: ~/repo
+  environment:
+    JVM_OPTS: -Xmx3200m # limit the maximum heap size to prevent out of memory errors
+  resource_class: large # default is medium. large (may) give us more consistent CI results
+
+# Runners for OpenJDK
+
+executors:
+  jdk8:
+    docker:
+      - image: clojure:temurin-8-lein-2.11.2-noble
+    <<: *defaults
+  jdk11:
+    docker:
+      - image: clojure:temurin-11-lein-2.11.2-noble
+    <<: *defaults
+  jdk17:
+    docker:
+      - image: clojure:temurin-17-lein-2.11.2-noble
+    <<: *defaults
+  jdk21:
+    docker:
+      - image: clojure:temurin-21-lein-2.11.2-noble
+    <<: *defaults
+  jdk24:
+    docker:
+      - image: clojure:temurin-24-lein-2.11.2-noble
+    <<: *defaults
+
+# Runs a given set of steps, with some standard pre- and post-
+# steps, including restoring of cache, saving of cache.
+#
+# Adapted from https://github.com/lambdaisland/meta/blob/master/circleci/clojure_orb.yml
+
+commands:
+  with_cache:
+    description: |
+      Run a set of steps with Maven dependencies and Clojure classpath cache
+      files cached.
+      This command restores ~/.m2 and .cpcache if they were previously cached,
+      then runs the provided steps, and finally saves the cache.
+      The cache-key is generated based on the contents of `deps.edn` present in
+      the `working_directory`.
+    parameters:
+      steps:
+        type: steps
+      clojure_version:
+        description: Will be used as part of the cache key
+        type: string
+      files:
+        description: Files to consider when creating the cache key
+        type: string
+        default: "deps.edn project.clj"
+      cache_version:
+        type: string
+        description: "Change this value to force a cache update"
+        default: "1"
+    steps:
+      - run:
+          name: Generate Cache Checksum
+          command: |
+            for file in << parameters.files >>
+            do
+              find . -name $file -exec cat {} +
+            done | sha256sum | awk '{print $1}' > /tmp/clojure_cache_seed
+      - restore_cache:
+          key: cache-<< parameters.cache_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+      - run:
+          name: Install babashka if not present
+          command: |
+            [ -e /usr/local/bin/bb ] && exit
+            # Install curl explicitly because jdk24 doesn't have it.
+            apt update && apt install -y curl
+            bash <(curl -s https://raw.githubusercontent.com/borkdude/babashka/master/install) --dir ~
+            mv ~/bb /usr/local/bin/bb
+      - steps: << parameters.steps >>
+      - save_cache:
+          paths:
+            - ~/.m2
+            - .cpcache
+            - /usr/local/bin/bb
+          key: cache-<< parameters.cache_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+
+  setup-windows:
+    steps:
+      - checkout
+      - run:
+          name: Install scoop latest
+          command: |
+            iwr get.scoop.sh -outfile 'install.ps1'                                          ; if(-not $?){exit 9}
+            .\install.ps1 -RunAsAdmin                                                        ; if(-not $?){exit 9}
+            scoop bucket add scoop-clojure https://github.com/littleli/scoop-clojure         ; if(-not $?){exit 9}
+            scoop bucket add extras                                                          ; if(-not $?){exit 9}
+            New-Item -Path $PROFILE -ItemType "file" -Force                                  ; if(-not $?){exit 9}
+            add-content $PROFILE $("`$env:PATH=""$(Resolve-Path ~\scoop\shims);`$env:PATH"""); if(-not $?){exit 9}
+            Write-host $env:PATH                                                             ; if(-not $?){exit 9}
+
+      - run:
+          name: Install babashka latest
+          command:
+            scoop install babashka
+
+      - run:
+          name: Install lein latest
+          command:
+            scoop install leiningen
+
+jobs:
+
+  util_job:
+    description: |
+      Running utility commands/checks (linter etc.)
+    parameters:
+      steps:
+        type: steps
+      clojure_version:
+        type: string
+        default: "1.11"
+    executor: jdk21
+    environment:
+      CLOJURE_VERSION: << parameters.clojure_version >>
+    steps:
+      - checkout
+      - with_cache:
+          cache_version: "util_v1"
+          clojure_version: << parameters.clojure_version >>
+          steps: << parameters.steps >>
+
+  test:
+    description: |
+      Run tests against given version of JDK and Clojure
+    parameters:
+      jdk_version:
+        type: string
+      clojure_version:
+        type: string
+    executor: << parameters.jdk_version >>
+    environment:
+      CLOJURE_VERSION: << parameters.clojure_version >>
+    steps:
+      - checkout
+      - with_cache:
+          cache_version: "test_v1"
+          clojure_version: << parameters.clojure_version >>
+          steps:
+            - run:
+                name: Running tests
+                command: bb test
+            - store_test_results:
+                path: test-results
+
+  ## Commented out because windows tests are kinda broken right now.
+  # test_windows:
+  #   description: |
+  #     Run tests on MS-Windows using the system's JDK version and given
+  #     CLOJURE_VERSION.
+  #   executor: win/default
+  #   parameters:
+  #     clojure_version:
+  #       type: string
+  #   steps:
+  #     - setup-windows
+  #     - run:
+  #         name: run tests
+  #         command: |
+  #           java -version; if(-not $?){exit 9}
+  #           bb test      ; if(-not $?){exit 9}
+
+workflows:
+  ci-test-matrix:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              # Clojure versions 1.7-1.9 are tested only against JDK8 because of
+              # multiple incompatibilities of those versions with JDK11+.
+              clojure_version: ["1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]
+              jdk_version: [jdk8]
+      - test:
+          matrix:
+            parameters:
+              clojure_version: ["1.10", "1.11", "1.12"]
+              jdk_version: [jdk11, jdk17, jdk21, jdk24]
+      # - test_code_windows:
+      #     name: Win, Java sys, Clj 1.11
+      #     clojure_version: "1.11"
+      - util_job:
+          name: Code Linting
+          steps:
+            - run:
+                name: Running Eastwood
+                command: |
+                  bb eastwood
+            - run:
+                name: Running cljfmt
+                command: |
+                  bb cljfmt
+            - run:
+                name: Running clj-kondo
+                command: |
+                  bb kondo
+      - util_job:
+          name: Checking Cljdoc
+          steps:
+            - run:
+                name: Verifying Cljdoc
+                command: |
+                  bb verify_cljdoc

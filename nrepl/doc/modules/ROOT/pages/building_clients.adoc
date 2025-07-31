@@ -1,0 +1,136 @@
+= Building Clients
+
+NOTE: This page is very incomplete and a work in progress.
+
+== Overview
+
+This part of the documentation is mostly intended for people who are
+working on nREPL clients (e.g. command-line tools and editors).
+We'll go over the basics of building an nREPL client and some of the best
+practices that might not be obvious to people who are not familiar with the process.
+
+We'll try to keep the conversation mostly focused on building clients for the nREPL protocol
+in general, but we'll also highlight some specifics of nREPL's Clojure implementation.
+
+== Basics
+
+At the very least a client should be able to connect to an nREPL server and
+support code evaluation (the `eval` op). Ideally, the client should be able to make use of all
+the ops that are part of the nREPL protocol.
+
+While, the reference nREPL server for Clojure supports multiple data exchange
+formats, it's important for clients to support `bencode`, as that is the only format
+embraced the nREPL protocol. If a client is focused only on Clojure(Script) nREPL
+servers they can safely opt for EDN, or ideally support both `bencode` and EDN.
+
+A typical message exchange between a client and a server would be:
+
+* Client sends `clone` to create a new session.
+* Server responds with the session id.
+* Client sends `describe` to check the server's capabilities and version/runtime information.
+* Server responds with a map of the relevant data.
+* Clients starts sending `eval` messages using the session id that it obtained earlier.
+* Server responds with the appropriate messages (e.g. `value` and `out`). Eventually a message with
+status `done` signals that the `eval` message has been fully processed.
+
+NOTE: If you don't pass a session explicitly to some op, the server is supposed to create
+a transient (one-off) session on the fly. That's fine for most ops, as they don't interact
+with the session state, but it's generally a bad idea for user evaluations.
+
+The reference nREPL implementation bundles a
+https://github.com/nrepl/nrepl/blob/master/src/clojure/nrepl/cmdline.clj[simple command-line client implementation]
+that should give a pretty good overview of how to build a client.
+There are a few other simple clients that you can explore for inspiration:
+
+* https://github.com/eraserhd/rep[rep]
+* https://github.com/clojure-vim/nrepl-python-client[nrepl-python-client]
+
+It might also be a good idea to see the message exchange between some nREPL and client.
+CIDER provides a https://docs.cider.mx/cider/troubleshooting.html#debugging-the-communication-with-nrepl[convenient solution] for this.
+
+== Best Practices
+
+Below is a listing of best practices when it comes to building nREPL clients. A
+common problem with clients is that they typically assume they are talking to a
+Clojure server. While this is OK in some cases (e.g. if you're building a
+Clojure IDE), it's always better to build clients that can work with any nREPL
+server. Note that some of the suggestions here might not apply to all servers.
+
+* Keep user evaluations in one sessions and tooling-related evaluations (e.g. for code completion) in another.
+This will ensure that vars like `*1` and `*e` are not messed up.
+* Don't assume too much about the server. Infer the capabilities of the server using `describe`. Try to make
+your client Clojure-agnostic.
+* Leverage streaming of values and output, when supported by the server. This improves a lot the performance when you're dealing with huge results.
+* Leverage data cut-off limits when supported by the server.
+* Match requests and responses based on their ID, if you need to assign different callbacks to messages of the same type (this is a common situation in programming editors).
+* Use sequential message ids in the scope of a session - this makes it easier to track the flow of messages.
+* Provide some debug mode where you can see a dump of the requests and the responses.
+
+== Modifying middleware
+
+To add a middleware that's already available on the server's classpath, it's as
+simple as sending the message
+
+[source,clojure]
+----
+{:op "add-middleware"
+ :middleware ["cider.nrepl.middleware/wrap-version"]}
+----
+
+However, if we tried to use the middleware with an `cider-version` op, we'd get an
+error, because the middleware is implemented in a different namespace, which is
+only loaded on the first use of the `cider-version` op. This is a practice in
+many middleware to improve startup performance. One method of getting around this
+is to request the extra namespace to be loaded at `add-middleware` time too:
+
+[source,clojure]
+----
+{:op "add-middleware"
+ :middleware ["cider.nrepl.middleware/wrap-version"]
+ :extra-namespaces ["cider.nrepl.middleware.version"]}
+
+;; now, the following should work
+{:op "cider-version"}
+----
+
+There is no operation to remove a single middleware, but it's possible to reset
+the stack to a baseline with the `swap-middleware` operation. If the goal is to
+simply reset the middleware stack, use this in conjunction with
+`nrepl.server/default-middleware`.
+
+Also note that updating the middleware stack may also destroy/re-create
+middleware state. The impact on each middleware differs, however, as some of
+them, e.g. `session` holds their state globally.
+
+== Debugging the Communication with nREPL
+
+Occasionally it's be useful to inspect the communication between your client and
+nREPL. nREPL clients are generally encouraged to provide some nREPL message logging
+functionality, as that'd be beneficial for their end users as well. (e.g. CIDER
+has a `+*nrepl-messages*+` where you can monitor all requests and responses)
+
+There's also https://github.com/lambdaisland/nrepl-proxy[nrepl-proxy], that
+allows you to intercept the communication between an nREPL server and a client.
+Its output looks something like this:
+
+[source]
+----
+nil ---> 1 clone {}
+J <=== 1 #{:done} {:new-session "002914a8-db79-408d-807a-c5b3955ab6f9"}
+nil ---> 2 clone {}
+X <=== 2 #{:done} {:new-session "6a7e7b99-1b8e-4008-bbe5-ddddf46672a9"}
+Y ---> 3 describe {}
+Y <=== 3 #{:done} {:aux {:current-ns "user"}, :ops {:stdin {}, :add-middleware {}, :lookup {}, :swap-middleware {}, :ls-middleware {}, :close {}, :load-file {}, :ls-sessions {}, :clone {}, :describe {}, :interrupt {}, :completions {}, :eval {}}, :versions {:clojure {:incremental 3, :major 1, :minor 10, :version-string "1.10.3"}, :java {:version-string "17"}, :nrepl {:incremental 0, :major 0, :minor 9, :version-string "0.9.0"}}}
+Y ---> 4 eval {:nrepl.middleware.print/buffer-size 4096, :file "*cider-repl lambdaisland/nrepl-proxy:localhost:5424(clj)*", :nrepl.middleware.print/quota 1048576, :nrepl.middleware.print/print "cider.nrepl.pprint/pprint", :column 1, :line 10, :code "(clojure.core/apply clojure.core/require clojure.main/repl-requires)", :inhibit-cider-middleware "true", :nrepl.middleware.print/stream? "1", :nrepl.middleware.print/options {:right-margin 80}}
+G ---> 5 eval {:code "(seq (.split (System/getProperty \"java.class.path\") \":\"))"}
+Y <--- 4 #{:nrepl.middleware.print/error} #:nrepl.middleware.print{:error "Couldn't resolve print-var cider.nrepl.pprint/pprint"}
+Y <--- 4 #{} {:value "nil"}
+Y <--- 4 #{} {:ns "user"}
+Y <=== 4 #{:done} {}
+----
+
+You can read more on the topic https://github.com/nrepl/nrepl/issues/85[here].
+
+== Additional Resources
+
+* https://mauricio.szabo.link/blog/2020/04/04/implementing-a-nrepl-client/

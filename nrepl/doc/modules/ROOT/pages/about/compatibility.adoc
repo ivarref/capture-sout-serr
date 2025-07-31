@@ -1,0 +1,74 @@
+= Compatibility
+
+NOTE: This section applies to most projects in nREPL's GitHub
+organization.
+
+== Java
+
+nREPL officially targets LTS releases and the most recent rapid
+release version.  More generally speaking - we aim to support all
+Java releases that are currently officially supported by Oracle.
+
+This is currently Java 8, 11, 17, 21, and 23.
+
+== Clojure
+
+nREPL targets Clojure 1.7+. As Clojure doesn't have the concept of supported releases
+we have to get a bit creative to determine the minimum version to target.
+
+The minimum required Clojure version is currently derived using data
+from the
+https://clojure.org/news/2021/04/06/state-of-clojure-2021[State of
+Clojure] survey. In general we consider a Clojure release eligible for
+dropping once its usage drops below 5%, but we'd not drop support for
+any release just for the sake of doing it. We'd do it only if
+this would lessen the maintenance burden or open up the possibility for
+big nREPL improvements.
+
+== Compatibility Matrix
+
+Below you can find the official compatibility matrix for nREPL. For a
+very long time the project targeted JDK 5 and Clojure 1.2, but the
+requirements were bumped in nREPL 0.4.
+
+.Compatibility Matrix
+|===
+| nREPL | Required JDK | Required Clojure
+
+| 0.3.x
+| 5
+| 1.2
+
+| 0.4.x - 0.9.x
+| 8
+| 1.7
+
+| 1.0+
+| 8
+| 1.7
+
+|===
+
+== Java 20+ compatibility
+
+In general, nREPL behavior does not depend on the versions of Java and Clojure.
+As of now, there is one exception to this rule, see
+xref:installation.adoc#jvmti[JVMTI agent] page.
+
+== Backwards Compatibility
+
+IMPORTANT: Given the massive community investment in developing all sorts of
+tooling on top of nREPL, nREPL's team pledges to evolve the project only in
+a responsible manner and backwards-compatible ways.
+
+It's extremely unlikely that we're going to break compatibility on the
+protocol level ever (with the rare cases of changing/removing things
+that existed, but we knew for a fact weren't used).  Most often
+backwards compatibility would be broken on the implementation level
+(usually it's just removal of deprecated functionality).
+
+That would always happen with plenty of lead time and would be annotated
+accordingly in the changelog.
+
+IMPORTANT: Features/APIs marked as "Experimental" are subject to changes.
+Be mindful of those.

@@ -1,0 +1,37 @@
+= Team
+
+== The Core Team
+
+The direction of the project is being stewarded by the nREPL core team. This
+group of long-term contributors manages releases, evaluates pull-requests, and
+does a lot of the groundwork on major new features.
+
+* https://github.com/bbatsov[Bozhidar Batsov] (maintainer)
+* https://github.com/cichli[Michael Griffiths]
+* https://github.com/alexander-yakushev[Oleksandr Yakushev]
+
+== nREPL Alumni
+
+In addition, we'd like to extend a special thanks the following retired nREPL
+core team members. Lovingly known as The Alumni:
+
+* https://github.com/cemerick[Chas Emerick] (author)
+* https://github.com/shen-tian[Shen Tian]
+
+== Thanks
+
+Thanks to the following Clojure masters for their helpful feedback during the
+initial design phases of nREPL:
+
+* Justin Balthrop
+* Meikel Brandmeyer
+* Hugo Duncan
+* Christophe Grand
+* Anthony Grimes
+* Phil Hagelberg
+* Rich Hickey
+* Chris Houser
+* Colin Jones
+* Laurent Petit
+* Eric Thorsen
+* Dominic Monroe

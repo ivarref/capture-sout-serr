@@ -1,0 +1,28 @@
+# emacs + vi backup files
+*~
+.*.sw*
+
+# various IDE junk
+*.ipr
+*.iml
+*.iws
+.project
+.classpath
+.settings
+/.idea/
+
+# artifacts, etc
+eclipse-classes
+classes
+target
+
+.externalToolBuilders
+
+/.eastwood
+/.lein*
+/.nrepl-port
+pom.xml
+build.xml
+/test-results
+/.clj-kondo/
+/.lsp/

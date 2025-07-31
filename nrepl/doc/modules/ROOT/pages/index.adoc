@@ -1,0 +1,63 @@
+= nREPL
+:notitle:
+
+image::logo-w1280.png[nREPL's logo]
+
+== Overview
+
+nREPL is a Clojure **n**etwork REPL that provides a REPL server and
+client, along with some common APIs of use to IDEs and other tools
+that may need to evaluate Clojure code in remote environments.
+
+== Why nREPL?
+
+nREPL has been designed with the aim of ensuring that it satisfies the
+requirements of both application developers (in support of activities ranging
+from interactive remote debugging and experimentation in development
+contexts through to more advanced use cases such as updating deployed
+applications) as well as toolmakers (providing a standard way to connect to and
+introspect running environments as a way of informing user interfaces of all
+kinds, including "standard" interactive, text-based REPLs).
+
+The default network protocol used is simple, depending neither
+on JVM or Clojure specifics, thereby allowing (encouraging?) the development
+of non-Clojure REPL clients.  The REPLs operational semantics are such
+that essentially any non-JVM Clojure implementation should be able to
+implement it, with allowances for hosts that lack the concurrency primitives to
+support e.g. asynchronous evaluation, interrupts, etc.
+
+== Beyond Clojure
+
+While this site is mostly about nREPL's reference (canonical) Clojure implementation,
+it's important to point out that the nREPL protocol is language-agnostic and can be
+leveraged for many languages that have the ability to evaluate code
+at runtime.
+
+One way to describe nREPL would be as something similar in
+nature to the https://langserver.org/[Language Server Protocol]. nREPL is not nearly as
+ambitious as LSP, but on the other hand it's also much simpler and it's trivial to
+create nREPL clients in any language.
+
+TIP: You can find some alternative nREPL implementations and more on the subject xref:beyond_clojure.adoc[here].
+
+== Community-Driven
+
+One of the defining attributes of nREPL is that it's a project built by
+the Clojure community for the Clojure community. Making it easy for everyone
+interested to participate in the development of nREPL was one of the biggest
+reasons why we decided to leave the "Clojure Contrib" umbrella.
+
+Everyone's welcome to get involved in the project, so we can take it to the next level!
+
+TIP: Check out the how you can help nREPL xref:about/contributing.adoc[here].
+
+== Status
+
+nREPL is extremely stable at this point. Its communication protocol and API are
+rock-solid and battle tested and have been powering much of the existing Clojure
+tooling for several years now.footnote:[nREPL had virtually no alternatives
+before the introduction of the built-in Socket REPL in Clojure 1.8.]
+
+Given the massive community investment in developing all sorts of
+tooling on top of nREPL, nREPL's team pledges to evolve the project only in
+a responsible manner and backwards-compatible ways.

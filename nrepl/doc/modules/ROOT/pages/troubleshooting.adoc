@@ -1,0 +1,61 @@
+= Troubleshooting
+
+This section of the manual tries to summarize the most common problems that you may encounter
+while using nREPL and their solutions.
+
+Generally it's also a good idea to check whether the problem you've experienced is not a bug that's
+already reported on our issue tracker.
+
+== Middleware
+
+=== Warnings when Starting nREPL
+
+If you encounter something like:
+
+[source,shell]
+----
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-apropos, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-classpath, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-complete, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-debug, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-enlighten, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-format, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-info, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-inspect, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-macroexpand, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-slurp, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-ns, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-out, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-content-type, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-slurp, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-pprint, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-pprint-fn, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-profile, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-refresh, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-resource, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-spec, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-stacktrace, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-test, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-trace, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-tracker, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-undef, see nrepl.middleware/set-descriptor!
+[WARNING] No nREPL middleware descriptor in metadata of #'cider.nrepl/wrap-version, see nrepl.middleware/set-descriptor!
+nREPL server started on port 36457 on host 127.0.0.1 - nrepl://127.0.0.1:36457
+----
+
+This means that you're trying to load middleware incompatible with the current
+version of nREPL. Make sure you're using the latest versions of all the
+middleware libraries in your project/profiles and that you're not
+loading any projects with explicit `tools.nrepl` dependencies that get
+required early in your projects (e.g. in `user.clj`).
+
+== Leiningen
+
+=== The REPL Task Crashes
+
+If you experience problems running `lein repl` you have to make sure that:
+
+* You're not using Leiningen 2.8.2 (a bug there rendered the `repl` task unusable - it was addressed in 2.8.3).
+* Your project is using Clojure 1.7+.
+* Your project is using Java 8+.
+* You're using the latest versions of nREPL middleware.

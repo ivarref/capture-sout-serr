@@ -1,0 +1,117 @@
+= Installation
+
+[NOTE]
+====
+nREPL is compatible with Clojure 1.7.0+ and Java 8+.
+====
+
+nREPL is a library (as opposed to it being an application), so it's
+not something you'd be installing in the traditional sense. There's
+currently no nREPL binary or script that you can run to spin a server.
+
+[NOTE]
+====
+While there's no binary, there is a command-line interface that
+mostly targets `clj`. It's documented in the subsequent sections of this
+manual.
+====
+
+All popular Clojure build tools (Leiningen, Gradle, Maven) have
+the ability to run an nREPL server and most of the time you'll probably
+simply use nREPL through them and end up using whatever nREPL version
+they happen to ship.
+
+Still, from time to time you'll be building a tool around nREPL or you'll
+want to embed an nREPL server directly in your application. In those
+scenarios some kind of an installation will be in order - just adding
+nREPL as a dependency to your project.
+
+nREPL is available in Clojars. Add this to your Leiningen
+`project.clj` `:dependencies`:
+
+[source,clojure]
+----
+[nrepl "1.3.1"]
+----
+
+[TIP]
+====
+You can override the version of nREPL supplied by Leiningen by adding nREPL as a
+dependency to your project.
+====
+
+Or, add this to your Gradle project's `build.gradle`:
+
+[source,groovy]
+----
+dependencies {
+  // to use as a library in your code
+  implementation 'nrepl:nrepl:1.3.1'
+
+  // or to override the version of nREPL used by the clojureRepl task
+  nrepl 'nrepl:nrepl:1.3.1'
+}
+----
+
+Or, add this to your Maven project's `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+  <groupId>nrepl</groupId>
+  <artifactId>nrepl</artifactId>
+  <version>1.3.1</version>
+</dependency>
+----
+
+[[jvmti]]
+== Enable libnrepl JVMTI agent
+
+Starting with Java 20, the previously deprecated
+https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#stop()[Thread.stop]
+method has been
+https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/doc-files/threadPrimitiveDeprecation.html[disabled].
+This change made it impossible for the xref:ops.adoc#interrupt[interrupt]
+middleware to forcibly stop evaluation of forms which don't respond to the
+officially endorsed
+https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#interrupt()[Thread.interrupt]
+calls. In response, nREPL introduced a native
+https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html[JVMTI-based]
+agent to be able to stop threads on the latest Java again.
+
+nREPL ships with prebuilt JVMTI agent binaries for the following platforms:
+
+- Linux: *x64* and *arm64*
+- MacOS: *x64/arm64* (universal binary)
+
+NOTE: Other platforms and architectures not in this list are still supported by
+nREPL. Only the thread stopping capability and only on Java 20+ will not work
+there, the rest of nREPL functionality will still work as always.
+
+For the JVMTI agent to be able to attach to the running process, the JVM has to
+be started with the flag `-Djdk.attach.allowAttachSelf`. Depending on the build
+tool, this can be done like this:
+
+- With tools.deps, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to an alias
+in `deps.edn` and enable that alias, or add `-J-Djdk.attach.allowAttachSelf`
+explicitly to your REPL command.
+- With Leiningen, add `:jvm-opts ["-Djdk.attach.allowAttachSelf"]` to
+  `project.clj`.
+
+If `-Djdk.attach.allowAttachSelf` is not enabled, nREPL will not try to load the
+native agent and will not try to stop threads on Java 20 and newer if the
+regular `Thread.interrupt()` does not succeed.
+
+You can explicitly disable the JVMTI agent so that it does not load even with
+`-Djdk.attach.allowAttachSelf` enabled. To do that, add this line to
+xref:usage/server.adoc#server-configuration[nREPL config]:
+
+[source,clojure]
+----
+ :enable-jvmti-agent false
+----
+
+NOTE: Prior to Java 20, nREPL will not try to load libnrepl native agent
+regardless of the state of `-Djdk.attach.allowAttachSelf` flag or
+`:enable-jvmti-agent` configuration option, and will use `Thread.stop()` to
+interrupt the evaluating thread.

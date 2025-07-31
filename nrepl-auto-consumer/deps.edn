@@ -1,0 +1,12 @@
+{:deps
+ {nrepl/nrepl                          {:mvn/version "1.3.1"}
+  com.github.ivarref/capture-sout-serr {:mvn/version "0.1.0-SNAPSHOT"}}
+
+ :paths
+ ["src"]
+
+ :aliases
+ {:run-server
+  {:exec-fn com.github.ivarref.run-server/run-server}
+  :run-client
+  {:exec-fn com.github.ivarref.run-server/run-client}}}

@@ -1,0 +1,16 @@
+RECEIVED: Constructor AnotherClassThatPrintsAsPartOfInitialization
+RECEIVED: static SomeClassThatPrintsAsPartOfInitialization.getInt()
+RECEIVED: Constructor AnotherClassThatPrintsAsPartOfInitialization
+RECEIVED: Constructor AnotherClassThatPrintsAsPartOfInitialization
+RECEIVED: static INIT SomeClassThatPrintsAsPartOfInitialization
+RECEIVED: Constructor AnotherClassThatPrintsAsPartOfInitialization
+RECEIVED: println from background thread. Count: 1
+RECEIVED: System/out println from background thread. Count: 1
+RECEIVED: System/out println from background thread. Count: 2
+RECEIVED: println from background thread. Count: 2
+RECEIVED: System/out println from background thread. Count: 3
+RECEIVED: println from background thread. Count: 3
+RECEIVED: System/out println from background thread done
+RECEIVED: println from background thread done
+client received all lines!
+

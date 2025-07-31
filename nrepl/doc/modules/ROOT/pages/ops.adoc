@@ -1,0 +1,259 @@
+////
+This file is _generated_ by #'nrepl.impl.docs/-main
+   *Do not edit!*
+////
+= Supported nREPL operations
+
+[small]#generated from a verbose 'describe' response (nREPL v1.3.1)#
+
+== Operations
+
+=== `add-middleware`
+
+Adding some middleware
+
+Required parameters::
+* `:middleware` a list of middleware
+
+
+Optional parameters::
+* `:extra-namespaces` a list of extra namespaces to load. This is useful when the new middleware feature deferred loading
+
+
+Returns::
+* `:status` ``done``, once done, and ``error``, if there's any problems in loading a middleware
+* `:unresolved-middleware` List of middleware that could not be resolved
+
+
+
+=== `clone`
+
+Clones the current session, returning the ID of the newly-created session.
+
+Required parameters::
+{blank}
+
+Optional parameters::
+* `:session` The ID of the session to be cloned; if not provided, a new session with default bindings is created, and mapped to the returned session ID.
+* `:client-name` The nREPL client name, e.g. "CIDER"
+* `:client-version` The nREPL client version, e.g. "1.17.0"
+
+Returns::
+* `:new-session` The ID of the new session.
+
+
+
+=== `close`
+
+Closes the specified session.
+
+Required parameters::
+* `:session` The ID of the session to be closed.
+
+
+Optional parameters::
+{blank}
+
+Returns::
+{blank}
+
+
+=== `completions`
+
+Provides a list of completion candidates.
+
+Required parameters::
+* `:prefix` The prefix to complete.
+
+
+Optional parameters::
+* `:complete-fn` The fully qualified name of a completion function to use instead of the default one (e.g. ``my.ns/completion``).
+* `:ns` The namespace in which we want to obtain completion candidates. Defaults to ``\*ns*``.
+* `:options` A map of options supported by the completion function. Supported keys: ``extra-metadata`` (possible values: ``:arglists``, ``:docs``).
+
+
+Returns::
+* `:completions` A list of completion candidates. Each candidate is a map with ``:candidate`` and ``:type`` keys. Vars also have a ``:ns`` key.
+
+
+
+=== `describe`
+
+Produce a machine- and human-readable directory and documentation for the operations supported by an nREPL endpoint.
+
+Required parameters::
+{blank}
+
+Optional parameters::
+* `:verbose?` Include informational detail for each "op"eration in the return message.
+
+
+Returns::
+* `:aux` Map of auxiliary data contributed by all of the active nREPL middleware via :describe-fn functions in their descriptors.
+* `:ops` Map of "op"erations supported by this nREPL endpoint
+* `:versions` Map containing version maps (like \*clojure-version*, e.g. major, minor, incremental, and qualifier keys) for values, component names as keys. Common keys include "nrepl" and "clojure".
+
+
+
+=== `eval`
+
+Evaluates code. Note that unlike regular stream-based Clojure REPLs, nREPL's ``"eval"`` short-circuits on first read error and will not try to read and execute the remaining code in the message.
+
+Required parameters::
+* `:code` The code to be evaluated.
+* `:session` The ID of the session within which to evaluate the code.
+
+
+Optional parameters::
+* `:column` The column number in [file] at which [code] starts.
+* `:eval` A fully-qualified symbol naming a var whose function value will be used to evaluate [code], instead of ``clojure.core/eval`` (the default).
+* `:file` The path to the file containing [code]. ``clojure.core/\*file*`` will be bound to this.
+* `:id` An opaque message ID that will be included in responses related to the evaluation, and which may be used to restrict the scope of a later "interrupt" operation.
+* `:line` The line number in [file] at which [code] starts.
+* `:ns` The namespace in which to perform the evaluation. The supplied namespace must exist already (e.g. be loaded). If no namespace is specified the evaluation falls back to ``\*ns*`` for the session in question.
+* `:read-cond` The options passed to the reader before the evaluation. Useful when middleware in a higher layer wants to process reader conditionals.
+* `:nrepl.middleware.caught/caught` A fully-qualified symbol naming a var whose function to use to convey interactive errors. Must point to a function that takes a ``java.lang.Throwable`` as its sole argument.
+* `:nrepl.middleware.caught/print?` If logical true, the printed value of any interactive errors will be returned in the response (otherwise they will be elided). Delegates to ``nrepl.middleware.print`` to perform the printing. Defaults to false.
+* `:nrepl.middleware.print/buffer-size` The size of the buffer to use when streaming results. Defaults to 1024.
+* `:nrepl.middleware.print/keys` A seq of the keys in the response whose values should be printed.
+* `:nrepl.middleware.print/options` A map of options to pass to the printing function. Defaults to ``nil``.
+* `:nrepl.middleware.print/print` A fully-qualified symbol naming a var whose function to use for printing. Must point to a function with signature [value writer options].
+* `:nrepl.middleware.print/quota` A hard limit on the number of bytes printed for each value.
+* `:nrepl.middleware.print/stream?` If logical true, the result of printing each value will be streamed to the client over one or more messages.
+
+
+Returns::
+* `:ex` The type of exception thrown, if any. If present, then ``:value`` will be absent.
+* `:ns` \*ns*, after successful evaluation of ``code``.
+* `:root-ex` The type of the root exception thrown, if any. If present, then ``:value`` will be absent.
+* `:value` The result of evaluating ``code``, often ``read``able. This printing is provided by the ``print`` middleware. Superseded by ``ex`` and ``root-ex`` if an exception occurs during evaluation.
+
+
+
+=== `interrupt`
+
+Attempts to interrupt some executing request. When interruption succeeds, the thread used for execution is killed, and a new thread spawned for the session. While the session middleware ensures that Clojure dynamic bindings are preserved, other ThreadLocals are not. Hence, when running code intimately tied to the current thread identity, it is best to avoid interruptions. On Java 20 and later, if ``-Djdk.attach.allowAttachSelf`` is enabled, the JVMTI agent will be used to attempt to stop the thread.
+
+Required parameters::
+* `:session` The ID of the session used to start the request to be interrupted.
+
+
+Optional parameters::
+* `:interrupt-id` The opaque message ID sent with the request to be interrupted.
+
+
+Returns::
+* `:status` 'interrupted' if a request was identified and interruption will be attempted
+'session-idle' if the session is not currently executing any request
+'interrupt-id-mismatch' if the session is currently executing a request sent using a different ID than specified by the "interrupt-id" value
+'session-ephemeral' if the session is an ephemeral session
+
+
+
+=== `load-file`
+
+Loads a body of code, using supplied path and filename info to set source file and line number metadata. Delegates to underlying "eval" middleware/handler.
+
+Required parameters::
+* `:file` Full contents of a file of code.
+
+
+Optional parameters::
+* `:file-name` Name of source file, e.g. io.clj
+* `:file-path` Source-path-relative path of the source file, e.g. clojure/java/io.clj
+* `:nrepl.middleware.caught/caught` A fully-qualified symbol naming a var whose function to use to convey interactive errors. Must point to a function that takes a ``java.lang.Throwable`` as its sole argument.
+* `:nrepl.middleware.caught/print?` If logical true, the printed value of any interactive errors will be returned in the response (otherwise they will be elided). Delegates to ``nrepl.middleware.print`` to perform the printing. Defaults to false.
+* `:nrepl.middleware.print/buffer-size` The size of the buffer to use when streaming results. Defaults to 1024.
+* `:nrepl.middleware.print/keys` A seq of the keys in the response whose values should be printed.
+* `:nrepl.middleware.print/options` A map of options to pass to the printing function. Defaults to ``nil``.
+* `:nrepl.middleware.print/print` A fully-qualified symbol naming a var whose function to use for printing. Must point to a function with signature [value writer options].
+* `:nrepl.middleware.print/quota` A hard limit on the number of bytes printed for each value.
+* `:nrepl.middleware.print/stream?` If logical true, the result of printing each value will be streamed to the client over one or more messages.
+
+
+Returns::
+* `:ex` The type of exception thrown, if any. If present, then ``:value`` will be absent.
+* `:root-ex` The type of the root exception thrown, if any. If present, then ``:value`` will be absent.
+* `:value` The result of evaluating ``code``, often ``read``able. This printing is provided by the ``print`` middleware. Superseded by ``ex`` and ``root-ex`` if an exception occurs during evaluation.
+
+
+
+=== `lookup`
+
+Lookup symbol info.
+
+Required parameters::
+* `:sym` The symbol to lookup.
+
+
+Optional parameters::
+* `:lookup-fn` The fully qualified name of a lookup function to use instead of the default one (e.g. ``my.ns/lookup``).
+* `:ns` The namespace in which we want to do lookup. Defaults to ``\*ns*``.
+
+
+Returns::
+* `:info` A map of the symbol's info.
+
+
+
+=== `ls-middleware`
+
+List of current middleware
+
+Required parameters::
+{blank}
+
+Optional parameters::
+{blank}
+
+Returns::
+* `:middleware` list of vars representing loaded middleware, from inside out
+
+
+
+=== `ls-sessions`
+
+Lists the IDs of all active sessions.
+
+Required parameters::
+{blank}
+
+Optional parameters::
+{blank}
+
+Returns::
+* `:sessions` A list of all available session IDs.
+
+
+
+=== `stdin`
+
+Add content from the value of "stdin" to \*in* in the current session.
+
+Required parameters::
+* `:stdin` Content to add to \*in*.
+
+
+Optional parameters::
+{blank}
+
+Returns::
+* `:status` A status of "need-input" will be sent if a session's \*in* requires content in order to satisfy an attempted read operation.
+
+
+
+=== `swap-middleware`
+
+Replace the whole middleware stack
+
+Required parameters::
+* `:middleware` a list of middleware
+
+
+Optional parameters::
+* `:extra-namespaces` a list of extra namespaces to load. This is useful when the new middleware feature deferred loading
+
+
+Returns::
+* `:status` ``done``, once done, and ``error``, if there's any problems in loading a middleware
+* `:unresolved-middleware` List of middleware that could not be resolved
