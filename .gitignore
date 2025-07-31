@@ -8,3 +8,4 @@ nrepl-consumer/.max_prefix.txt
 nrepl-consumer/debug.log
 nrepl-consumer/debug2.log
 nrepl-consumer/.nrepl_client_done
+nrepl-consumer/nrepl_client_out.log

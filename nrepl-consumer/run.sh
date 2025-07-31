@@ -2,8 +2,6 @@
 
 set -euo pipefail
 
-echo "clojure -X:run-server" > ./.max_prefix.txt
-
 EXITCOLOR='31'
 SELF_NAME="$(basename "$0")"
 
@@ -19,6 +17,8 @@ done
 DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 cd "$DIR"
+
+echo "clojure -X:run-server" > ./.max_prefix.txt
 
 if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
   :
@@ -39,6 +39,7 @@ echo 'Truncate' > debug.log
 printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$SELF_NAME"
 
 rm -f ./.nrepl_client_done
+rm -f ./nrepl_client_out.log
 
 PROCESS_GROUP="$$"
 { env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 \
@@ -61,7 +62,7 @@ printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.p
   --connect --host localhost --port 7888 \
   && echo 'Exited with exit code 0' || echo -e "\e[31mFailed with exit code $?\e[0m";
   touch './.nrepl_client_done'; } \
-| ./prefix.py "nrepl-client"
+2>&1 | tee -i ./nrepl_client_out.log | ./prefix.py "nrepl-client"
 
 printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
 
@@ -76,14 +77,33 @@ wait "$TAIL_PID"
 set -e
 
 if [[ "" == "$(jobs -p)" ]]; then
-  EXITCOLOR='32'
   printf "%s\n" "No background jobs running" | ./prefix.py "$SELF_NAME"
 else
   printf "Background jobs is:\n%s\n" "$(jobs -p)" | ./prefix.py "$SELF_NAME"
 
   printf "%s\n" "Waiting for background processes to exit ..." | ./prefix.py "$SELF_NAME"
   wait $(jobs -p)
-  EXITCOLOR='32'
   printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ... OK" | ./prefix.py "$SELF_NAME"
 fi
 
+printf "%s\n" "Checking output of nrepl client ..." | ./prefix.py "$SELF_NAME"
+
+# https://stackoverflow.com/questions/1521462/looping-through-the-content-of-a-file-in-bash/
+while IFS="" read -r p || [ -n "$p" ]
+do
+  if [[ "" == "$p" ]]; then
+    :
+  else
+    if grep -q "$p" "./nrepl_client_out.log"; then
+#      printf 'OK found line %s\n' "$p"
+      :
+    else
+      printf "\e[31m%s '%s'\e[0m\n" "Did not find line" "$p" | ./prefix.py "$SELF_NAME"
+      exit 1
+    fi
+  fi
+done < ./expected_nrepl_client_out.log
+
+printf "%s\n" "Checking output of nrepl client ... OK" | ./prefix.py "$SELF_NAME"
+
+EXITCOLOR='32'
