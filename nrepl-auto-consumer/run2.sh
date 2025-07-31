@@ -49,8 +49,9 @@ PROCESS_GROUP="$$"
 | ./prefix.py "clojure -X:run-server" &
 CLOJURE_SERVER_PID="$!"
 
-{ { tail -f ./debug.log 2>&1 | ./prefix.py "debug.log"; } || true; } &
-TAIL_PID="$!"
+TAIL_PID="NONE"
+#{ { tail -f ./debug.log 2>&1 | ./prefix.py "debug.log"; } || true; } &
+#TAIL_PID="$!"
 
 bash -c "./wait_nrepl.sh" 2>&1 | ./prefix.py "wait_nrepl.sh"
 
@@ -72,10 +73,14 @@ printf "Waiting for nREPL server process %s to exit ... OK\n" "$CLOJURE_SERVER_P
 
 printf "Terminating tail command with pid %s...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
 
-set +e
-kill -SIGTERM "$TAIL_PID"
-wait "$TAIL_PID"
-set -e
+if [[ "$TAIL_PID" == "NONE" ]]; then
+  :
+else
+  set +e
+  kill -SIGTERM "$TAIL_PID"
+  wait "$TAIL_PID"
+  set -e
+fi
 
 if [[ "" == "$(jobs -p)" ]]; then
   printf "%s\n" "No background jobs running" | ./prefix.py "$SELF_NAME"
