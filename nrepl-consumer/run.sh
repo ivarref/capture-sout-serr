@@ -66,10 +66,12 @@ printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID"
 wait "$CLOJURE_SERVER_PID"
 printf "Waiting for nREPL server process %s to exit ... OK\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
 
-printf "TAIL_PID is %s\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
+printf "TAIL_PID is %s. Terminating ...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
 
-kill -SIGINT "${TAIL_PID}"
-wait "${TAIL_PID}"
+set +e
+kill -SIGTERM "$TAIL_PID"
+wait "$TAIL_PID"
+set -e
 
 printf "Background jobs is:\n%s\n" "$(jobs -p)" | ./prefix.py "$SELF_NAME"
 
@@ -79,5 +81,3 @@ wait $(jobs -p)
 EXITCOLOR='32'
 
 printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ... OK" | ./prefix.py "$SELF_NAME"
-
-echo "janei ..."
