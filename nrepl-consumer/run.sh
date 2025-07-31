@@ -40,10 +40,14 @@ echo 'Truncate' > debug2.log
 printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$SELF_NAME"
 
 PROCESS_GROUP="$$"
-{ env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 || kill -- "-$PROCESS_GROUP"; } | ./prefix.py "clojure -X:run-server" &
+{ env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 \
+  && echo 'Exited with exit code 0' \
+  || { echo "Failed with exit code $?"; kill -- "-$PROCESS_GROUP"; }; } \
+| ./prefix.py "clojure -X:run-server" &
+CLOJURE_SERVER_PID="$!"
 
-tail -f ./debug.log 2>&1 | ./prefix.py "debug.log" &
-tail -f ./debug2.log 2>&1 | ./prefix.py "debug2.log" &
+{ { tail -f ./debug.log 2>&1 | ./prefix.py "debug.log"; } || true; } &
+TAIL_PID="$!"
 
 bash -c "./wait_nrepl.sh" 2>&1 | ./prefix.py "wait_nrepl.sh"
 
@@ -52,39 +56,28 @@ printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$SELF_NAME"
 printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$SELF_NAME"
 #clojure -X:run-client 2>&1 | ./prefix.py "clojure -X:run-client"
 
-cat ./src/com/github/ivarref/repl.clj | clj -M -m nrepl.cmdline \
---connect --host localhost --port 7888 \
+{ cat ./src/com/github/ivarref/repl.clj | clj -M -m nrepl.cmdline \
+  --connect --host localhost --port 7888 \
+  && echo 'Exited with exit code 0' || echo "Failed with exit code $?"; } \
 | ./prefix.py "nrepl-client"
 
-echo "Exited" | ./prefix.py "nrepl-client"
+printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
 
-#file1="./debug.log"
-#file2="./expected_debug.log"
-#
-#if [ ! -f "$file1" ]; then
-#  printf 'The file "%s" does not exist\n' "$file1" | ./prefix.py "$0"
-#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-#  exit 1
-#elif [ ! -f "$file2" ]; then
-#  printf 'The file "%s" does not exist\n' "$file2" | ./prefix.py "$0"
-#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-#  exit 1
-#elif cmp -s "$file1" "$file2"; then
-#  printf 'The file "%s" is the same as "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
-#  echo -e "\e[32mTest OK\e[0m" | ./prefix.py "$0"
-#else
-#  printf 'The file "%s" is different from "%s"\n' "$file1" "$file2" | ./prefix.py "$0"
-#  echo -e "\e[31mTest FAIL\e[0m" | ./prefix.py "$0"
-#  exit 1
-#fi
-#
-#printf "\e[0m%s\e[0m\n" "Contents of debug.log:" | ./prefix.py "$0"
-#cat ./debug.log | ./prefix.py "cat ./debug.log"
-#
-#printf "\e[0m%s\e[0m\n" "Contents of debug2.log:" | ./prefix.py "$0"
-#cat ./debug2.log | ./prefix.py "cat ./debug2.log"
+wait "$CLOJURE_SERVER_PID"
+printf "Waiting for nREPL server process %s to exit ... OK\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
+
+printf "TAIL_PID is %s\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
+
+kill -SIGINT "${TAIL_PID}"
+wait "${TAIL_PID}"
+
+printf "Background jobs is:\n%s\n" "$(jobs -p)" | ./prefix.py "$SELF_NAME"
 
 printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ..." | ./prefix.py "$SELF_NAME"
 wait $(jobs -p)
 
 EXITCOLOR='32'
+
+printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ... OK" | ./prefix.py "$SELF_NAME"
+
+echo "janei ..."
