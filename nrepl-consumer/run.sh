@@ -35,14 +35,15 @@ else
 fi
 
 echo 'Truncate' > debug.log
-echo 'Truncate' > debug2.log
 
 printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$SELF_NAME"
+
+rm -f ./.nrepl_client_done
 
 PROCESS_GROUP="$$"
 { env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 \
   && echo 'Exited with exit code 0' \
-  || { echo "Failed with exit code $?"; kill -- "-$PROCESS_GROUP"; }; } \
+  || { echo -e "\e[31mFailed with exit code $?\e[0m"; kill -- "-$PROCESS_GROUP"; }; } \
 | ./prefix.py "clojure -X:run-server" &
 CLOJURE_SERVER_PID="$!"
 
@@ -58,7 +59,8 @@ printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.p
 
 { cat ./src/com/github/ivarref/repl.clj | clj -M -m nrepl.cmdline \
   --connect --host localhost --port 7888 \
-  && echo 'Exited with exit code 0' || echo "Failed with exit code $?"; } \
+  && echo 'Exited with exit code 0' || echo -e "\e[31mFailed with exit code $?\e[0m";
+  touch './.nrepl_client_done'; } \
 | ./prefix.py "nrepl-client"
 
 printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
@@ -66,7 +68,7 @@ printf "Waiting for nREPL server process %s to exit ...\n" "$CLOJURE_SERVER_PID"
 wait "$CLOJURE_SERVER_PID"
 printf "Waiting for nREPL server process %s to exit ... OK\n" "$CLOJURE_SERVER_PID" | ./prefix.py "$SELF_NAME"
 
-printf "TAIL_PID is %s. Terminating ...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
+printf "Terminating tail command with pid %s...\n" "$TAIL_PID" | ./prefix.py "$SELF_NAME"
 
 set +e
 kill -SIGTERM "$TAIL_PID"

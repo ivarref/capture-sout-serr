@@ -1,5 +1,6 @@
 (ns com.github.ivarref.run-server
-  (:require [nrepl.server :as nrepl-server])
+  (:require [clojure.java.io :as io]
+            [nrepl.server :as nrepl-server])
   (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream
                                                SomeClassThatPrintsAsPartOfInitialization)
            (java.io OutputStreamWriter)
@@ -46,10 +47,12 @@
                 (.println System/out (str "System/out println from background thread done"))
                 (.countDown latch)))))
         (.await latch)
-        (debug "await latch done")
+        (debug "latch released")
         @client-done?
-        (debug "client is done")
-        (Thread/sleep 3000)))
+        (debug "client marked as done")
+        (while (not (.exists (io/file "./.nrepl_client_done")))
+          (Thread/sleep 16))
+        (debug "client exited")))
     (catch Exception e
       (binding [*out* *err*]
         (println "Server received exception:" e)))
