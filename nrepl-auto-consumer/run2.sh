@@ -5,8 +5,6 @@ set -euo pipefail
 EXITCOLOR='31'
 SELF_NAME="$(basename "$0")"
 
-trap "trap - SIGTERM && { printf \"\e[0;\${EXITCOLOR}mExiting\e[0m\n\" | ./prefix.py \"\$SELF_NAME\"; } && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
-
 # https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -18,11 +16,20 @@ DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 cd "$DIR"
 
+trap "trap - SIGTERM && { printf \"\e[0;\${EXITCOLOR}mExiting\e[0m\n\" | ./prefix.py \"\$SELF_NAME\"; } && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
+
 echo "clojure -X:run-server" > ./.max_prefix.txt
+
+if [[ "$#" -eq 1 && "$1" == "--watch" ]]; then
+  cd ..
+  git ls-files | entr bash -c "cd $DIR && ./run2.sh"
+  exit 0
+fi
 
 if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
   :
 else
+  bash -c "cd \"$DIR/../nrepl\" && lein install"                2>&1 | ./prefix.py "nrepl install"
   bash -c "cd \"$DIR/..\" && rm -rf ./target && lein javac"     2>&1 | ./prefix.py "lein javac"
   bash -c "cd \"$DIR/..\" && ./test.sh --skip-compile"          2>&1 | ./prefix.py "test.sh"
   bash -c "cd \"$DIR/..\" && ./test_replay.sh --skip-compile"   2>&1 | ./prefix.py "test_replay.sh"

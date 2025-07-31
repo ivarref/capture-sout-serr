@@ -17,12 +17,12 @@ UNBUFFERING: static INIT SomeClassThatPrintsAsPartOfInitialization
 UNBUFFERING: Constructor AnotherClassThatPrintsAsPartOfInitialization
 UNBUFFERING: println from background thread. Count: 1
 UNBUFFERING: System/out println from background thread. Count: 1
-DIRECT SEND: System/out println from background thread. Count: 2
 DIRECT SEND: println from background thread. Count: 2
-DIRECT SEND: System/out println from background thread. Count: 3
-DIRECT SEND: System/out println from background thread done
+DIRECT SEND: System/out println from background thread. Count: 2
 DIRECT SEND: println from background thread. Count: 3
+DIRECT SEND: System/out println from background thread. Count: 3
 DIRECT SEND: println from background thread done
+DIRECT SEND: System/out println from background thread done
 latch released
 client marked as done
 client exited

@@ -2,11 +2,12 @@ pom.xml
 target/
 .clj-kondo/
 sout*.log
-nrepl-consumer/.cpcache/
-nrepl-consumer/.clj-kondo/
+*/.cpcache/
+*/.clj-kondo/
 *-consumer/.max_prefix.txt
-nrepl-consumer/debug.log
+*/debug.log
 nrepl-consumer/debug2.log
 */.nrepl_client_done
-nrepl-consumer/nrepl_client_out.log
-*/.cpcache/
+*/nrepl_client_out.log
+nrepl/target/
+*/pom.xml
