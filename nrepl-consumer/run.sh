@@ -73,11 +73,15 @@ kill -SIGTERM "$TAIL_PID"
 wait "$TAIL_PID"
 set -e
 
-printf "Background jobs is:\n%s\n" "$(jobs -p)" | ./prefix.py "$SELF_NAME"
+if [[ "" == "$(jobs -p)" ]]; then
+  EXITCOLOR='32'
+  printf "%s\n" "No background jobs running" | ./prefix.py "$SELF_NAME"
+else
+  printf "Background jobs is:\n%s\n" "$(jobs -p)" | ./prefix.py "$SELF_NAME"
 
-printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ..." | ./prefix.py "$SELF_NAME"
-wait $(jobs -p)
+  printf "%s\n" "Waiting for background processes to exit ..." | ./prefix.py "$SELF_NAME"
+  wait $(jobs -p)
+  EXITCOLOR='32'
+  printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ... OK" | ./prefix.py "$SELF_NAME"
+fi
 
-EXITCOLOR='32'
-
-printf "\e[0m%s\e[0m\n" "Waiting for background processes to exit ... OK" | ./prefix.py "$SELF_NAME"
