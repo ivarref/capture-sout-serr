@@ -23,12 +23,13 @@ echo "clojure -X:run-server" > ./.max_prefix.txt
 if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
   :
 else
-  bash -c "cd \"$DIR/..\" && rm -rf ./target && lein javac"     2>&1 | ./prefix.py "lein javac"
-  bash -c "cd \"$DIR/..\" && ./test.sh --skip-compile"          2>&1 | ./prefix.py "test.sh"
-  bash -c "cd \"$DIR/..\" && ./test_replay.sh --skip-compile"   2>&1 | ./prefix.py "test_replay.sh"
-  bash -c "cd \"$DIR/..\" && ./test_truncate.sh --skip-compile" 2>&1 | ./prefix.py "test_truncate.sh"
-  bash -c "cd \"$DIR/..\" && lein install"                      2>&1 | ./prefix.py "lein install"
-  printf "\e[32m%s\e[0m\n" "Tests passed and install OK"             | ./prefix.py "$SELF_NAME"
+  bash -c "cd \"$DIR/../nrepl\" && rm -rf ./target && lein install" 2>&1 | ./prefix.py "nrepl install"
+  bash -c "cd \"$DIR/..\" && rm -rf ./target && lein javac"         2>&1 | ./prefix.py "lein javac"
+  bash -c "cd \"$DIR/..\" && ./test.sh --skip-compile"              2>&1 | ./prefix.py "test.sh"
+  bash -c "cd \"$DIR/..\" && ./test_replay.sh --skip-compile"       2>&1 | ./prefix.py "test_replay.sh"
+  bash -c "cd \"$DIR/..\" && ./test_truncate.sh --skip-compile"     2>&1 | ./prefix.py "test_truncate.sh"
+  bash -c "cd \"$DIR/..\" && lein install"                          2>&1 | ./prefix.py "lein install"
+  printf "\e[32m%s\e[0m\n" "Tests passed and install OK"                 | ./prefix.py "$SELF_NAME"
 #  printf '\033[3J' # clear scrollback
 #  printf '\033[2J' # clear whole screen without moving the cursor
 #  printf '\033[H' # move cursor to top left of the screen
