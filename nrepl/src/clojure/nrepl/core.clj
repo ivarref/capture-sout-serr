@@ -117,19 +117,16 @@
    head of the client's response seq, filtered to include only
    messages related to the :session id that will terminate when the session is
    closed."
-  [client & {:keys [session clone awaiting]}]
+  [client & {:keys [session clone]}]
   (let [session (or session (apply new-session client (when clone [:clone clone])))
         client-session (delimited-transport-seq client #{"session-closed"} {:session session})]
-    (when (or (= "true" (str/lower-case (or (System/getenv "NREPL_FORWARD_STDOUT") "false"))))
-      (when awaiting
-        (println "forwarding server stdout to this remote session")
-        (let [code-str forward-stdout-string
-              id (str "nrepl.cmdline-" (uuid))]
-          (swap! awaiting assoc id (promise))
-          (doseq [res (message client-session {:op "eval" :code code-str :id id})]
-            nil #_(when (:ns res) (set! *ns* (create-ns (symbol (:ns res))))))
-          @(get @awaiting id)
-          (swap! awaiting dissoc id))))
+    (when (or (= "true" (str/lower-case (or (System/getenv "NREPL_FORWARD_STDOUT") "false")))
+              (.exists (io/file ".nrepl_forward_stdout")))
+      (println "forwarding server stdout to this remote session")
+      (let [code-str forward-stdout-string
+            id (str "nrepl.cmdline-" (uuid))]
+        (doseq [res (message client-session {:op "eval" :code code-str :id id})]
+          nil)))
     client-session))
 
 (defn combine-responses

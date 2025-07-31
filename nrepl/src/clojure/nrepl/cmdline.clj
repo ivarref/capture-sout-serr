@@ -112,7 +112,7 @@ Exit:      Control+D or (exit) or (quit)"
     ;; We take 50ms to listen to any greeting messages, and display the value
     ;; in the `:out` slot.
     (Thread/sleep 50)
-    (let [session (nrepl/client-session client :awaiting awaiting)]
+    (let [session (nrepl/client-session client)]
       (swap! running-repl assoc :transport transport)
       (swap! running-repl assoc :client session)
       (binding [*ns* *ns*]
