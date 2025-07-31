@@ -5,8 +5,9 @@ set -euo pipefail
 echo "clojure -X:run-server" > ./.max_prefix.txt
 
 EXITCOLOR='31'
+SELF_NAME="$(basename "$0")"
 
-trap "trap - SIGTERM && { printf \"\e[0;\${EXITCOLOR}mExiting\e[0m\n\" | ./prefix.py \"\$0\"; } && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
+trap "trap - SIGTERM && { printf \"\e[0;\${EXITCOLOR}mExiting\e[0m\n\" | ./prefix.py \"\$SELF_NAME\"; } && kill -- -$$" SIGHUP SIGINT SIGTERM EXIT
 
 # https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 SOURCE=${BASH_SOURCE[0]}
@@ -18,8 +19,6 @@ done
 DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 cd "$DIR"
-
-SELF_NAME="$(basename "$0")"
 
 if [[ "$#" -eq 1 && "$1" == "--skip-compile" ]]; then
   :
