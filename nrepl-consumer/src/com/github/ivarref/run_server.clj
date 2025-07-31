@@ -1,41 +1,15 @@
 (ns com.github.ivarref.run-server
-  (:require [nrepl.core :as nrepl]
-            [nrepl.server :as nrepl-server])
+  (:require [nrepl.server :as nrepl-server])
   (:import (com.github.ivarref.capturesoutserr ReplayConsumePrintStream
                                                SomeClassThatPrintsAsPartOfInitialization)
-           (java.io OutputStreamWriter)))
+           (java.io OutputStreamWriter)
+           (java.util.concurrent CountDownLatch)))
 
 (set! *warn-on-reflection* true)
 
 (defonce debug-write-lock (Object.))
 
 (defonce original-stdout System/out)
-
-(defn run-server [_]
-  (try
-    (println "Starting nREPL server ...")
-    (let [replay-stream (ReplayConsumePrintStream.)]
-      (System/setOut replay-stream)
-      (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream))))
-    (println "not shown on -X:run-server, but will be buffered")
-    (SomeClassThatPrintsAsPartOfInitialization.)
-    (nrepl-server/start-server :port 7888)
-    (future
-      (loop [i 1]
-        (println (str "println from background thread. Count: " i))
-        (Thread/sleep 5000)
-        (recur (inc i))))
-    (future
-      (loop [i 1]
-        (.println System/out (str "System/out println from background thread. Count: " i))
-        (Thread/sleep 5000)
-        (recur (inc i))))
-    @(promise)
-    (catch Exception e
-      (binding [*out* *err*]
-        (println "Server received exception:" e)))
-    (finally
-      (println "nREPL server exiting"))))
 
 (defn debug [msg]
   (locking debug-write-lock
@@ -45,32 +19,40 @@
   (locking debug-write-lock
     (spit "debug2.log" (str msg "\n") :append true)))
 
-(defn hook-sout []
-  (debug2 "hook-sout-running")
-  (debug2 (str "*out* is: " (pr-str *out*)))
-  :hook-sout-ok)
-
-
-(defn err-println [& msgs]
-  (binding [*out* *err*]
-    (apply println msgs)))
-
-#_(defn run-client [_]
-    (try
-      (println "Starting nREPL client ...")
-      #_(System/setOut replay-stream)
-      #_(alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream)))
-      #_(println "not shown on -X:run-server")
-      #_(nrepl-server/start-server :port 7888)
-      (with-open [conn (nrepl/connect :host "127.0.0.1" :port 7888)]
-        (-> (nrepl/client conn 3000)    ; message receive timeout required
-            (nrepl/message {:op "eval" :code "(com.github.ivarref.run-server/hook-sout)"})
-            nrepl/response-values
-            (println)))
-      (println "Done")
-      (catch Exception e
-        (binding [*out* *err*]
-          (println "Client received exception:" e)))
-      (finally
-        (println "nREPL client exiting"))))
-
+(defn run-server [_]
+  (try
+    (println "Starting nREPL server ...")
+    (let [replay-stream (ReplayConsumePrintStream. System/out)]
+      (System/setOut replay-stream)
+      (alter-var-root #'*out* (fn [_] (OutputStreamWriter. replay-stream))))
+    (println "not shown on -X:run-server, but will be buffered")
+    (SomeClassThatPrintsAsPartOfInitialization.)
+    (nrepl-server/start-server :port 7888)
+    (let [latch (CountDownLatch. 2)]
+      (future
+        (loop [i 1]
+          (println (str "println from background thread. Count: " i))
+          (if (not= i 5)
+            (do
+              (Thread/sleep 3000)
+              (recur (inc i)))
+            (do
+              (println "println from background thread done")
+              (.countDown latch)))))
+      (future
+        (loop [i 1]
+          (.println System/out (str "System/out println from background thread. Count: " i))
+          (if (not= i 5)
+            (do
+              (Thread/sleep 3000)
+              (recur (inc i)))
+            (do
+              (.println System/out (str "System/out println from background thread done"))
+              (.countDown latch)))))
+      (.await latch)
+      (debug "await latch done"))
+    (catch Exception e
+      (binding [*out* *err*]
+        (println "Server received exception:" e)))
+    (finally
+      (println "nREPL server exiting"))))

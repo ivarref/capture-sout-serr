@@ -21,20 +21,36 @@ public class ReplayConsumePrintStream extends PrintStream {
     private final ByteArrayOutputStream bufOut;
     private Consumer<String> consumer;
     private final List<String> buffer = new ArrayList<>(BUFFER_SIZE);
+    private final PrintStream copyStream;
 
     public ReplayConsumePrintStream() {
         super(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
         this.bufOut = (ByteArrayOutputStream) super.out;
         this.id = instanceNumber.getAndIncrement();
+        this.copyStream = null;
     }
 
-    public static synchronized void debug(String msg) {
+    public ReplayConsumePrintStream(final PrintStream copyToStream) {
+        super(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
+        this.bufOut = (ByteArrayOutputStream) super.out;
+        this.id = instanceNumber.getAndIncrement();
+        this.copyStream = copyToStream;
+    }
+
+    private synchronized void debug(String msg) {
         if ("TRUE".equalsIgnoreCase(System.getenv("ReplayConsumePrintStreamDebug"))) {
             final String fileName = "./debug.log";
             try (final FileWriter fw = new FileWriter(fileName, StandardCharsets.UTF_8, true);
                  final PrintWriter pw = new PrintWriter(fw)) {
                 pw.println(msg);
+                if (copyStream != null) {
+                    copyStream.println("DEBUG " + msg);
+                }
             } catch (IOException e) {
+                if (copyStream != null) {
+                    copyStream.println("Error during writing debug log: " + e.getMessage());
+                    e.printStackTrace(copyStream);
+                }
                 throw new RuntimeException(e);
             }
         }
@@ -68,7 +84,11 @@ public class ReplayConsumePrintStream extends PrintStream {
             try {
                 consumer.accept(line);
             } catch (Throwable t) {
-                debug("DIRECT SEND FAILED: " + t.getMessage());
+                String message = t.getMessage();
+                debug("DIRECT SEND FAILED: " + message);
+                if (copyStream != null) {
+                    t.printStackTrace(copyStream);
+                }
             }
         }
     }

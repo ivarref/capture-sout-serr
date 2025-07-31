@@ -39,7 +39,8 @@ echo 'Truncate' > debug2.log
 
 printf "\e[0;33m%s\e[0m\n" "Starting nREPL server ... " | ./prefix.py "$SELF_NAME"
 
-env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 | ./prefix.py "clojure -X:run-server" &
+PROCESS_GROUP="$$"
+{ env ReplayConsumePrintStreamDebug='TRUE' clojure -X:run-server 2>&1 || kill -- "-$PROCESS_GROUP"; } | ./prefix.py "clojure -X:run-server" &
 
 tail -f ./debug.log 2>&1 | ./prefix.py "debug.log" &
 tail -f ./debug2.log 2>&1 | ./prefix.py "debug2.log" &
@@ -51,8 +52,12 @@ printf "\e[32m%s\e[0m\n" "nREPL server up" | ./prefix.py "$SELF_NAME"
 printf "\e[0;33m%s\e[0m\n" "All set up. Starting nREPL client ... " | ./prefix.py "$SELF_NAME"
 #clojure -X:run-client 2>&1 | ./prefix.py "clojure -X:run-client"
 
-#cat ./client.clj | clj -M -m nrepl.cmdline --connect --host localhost --port 7888 | ./prefix.py "nrepl-client"
-#
+cat ./src/com/github/ivarref/repl.clj | clj -M -m nrepl.cmdline \
+--connect --host localhost --port 7888 \
+| ./prefix.py "nrepl-client"
+
+echo "Exited" | ./prefix.py "nrepl-client"
+
 #file1="./debug.log"
 #file2="./expected_debug.log"
 #
